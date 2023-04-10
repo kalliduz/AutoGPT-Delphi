@@ -4,6 +4,7 @@ This is an experiment to create a fully autonomous GPT-instance to solve arbitra
   - Delphi OpenAI library bindings from https://github.com/HemulGM/DelphiOpenAI
   - OpenAI API key
   - Google Custom Search API key (+ SearchEngine-ID)
+  - libssl/libeay for IndyHttp with SSL (https://github.com/IndySockets/OpenSSL-Binaries/)
 
 AutoGPT-Delphi uses GPT-4 by default, and will utilize GPT3.5-turbo for summarizations, so watch your costs in OpenAI. You can set the main agent to be 3.5 as well,
 but at the current point, the consistency is not really what you'd want.
