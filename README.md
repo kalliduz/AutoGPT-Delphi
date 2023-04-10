@@ -1,9 +1,9 @@
 # AutoGPT-Delphi
 This is an experiment to create a fully autonomous GPT-instance to solve arbitrary Tasks. Its functionality is similar to AutoGPT(Python), BabyAGI or Jarvis
 ## Requirements
-  - Delphi OpenAI library bindings from https://github.com/HemulGM/DelphiOpenAI
-  - OpenAI API key
-  - Google Custom Search API key (+ SearchEngine-ID)
+  - Delphi OpenAI API implementation from https://github.com/HemulGM/DelphiOpenAI
+  - OpenAI API key (https://platform.openai.com/account/api-keys)
+  - Google Custom Search API key & SearchEngine-ID (https://console.cloud.google.com/apis/credentials)
   - libssl/libeay for IndyHttp with SSL (https://github.com/IndySockets/OpenSSL-Binaries/)
 
 AutoGPT-Delphi uses GPT-4 by default, and will utilize GPT3.5-turbo for summarizations, so watch your costs in OpenAI. You can set the main agent to be 3.5 as well,
