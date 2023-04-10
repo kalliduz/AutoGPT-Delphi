@@ -3,7 +3,7 @@
 interface
 uses
   Types, Classes, OpenAI, OpenAI.Chat, OpenAI.Completions, Agent, Agent.GPT, Agent.ReadFile, Agent.WriteFile, Agent.Browse, Agent.GoogleSearch,
-  Agent.User;
+  Agent.User, Agent.Memory;
 const
   MAIN_GPT_MODEL = 'gpt-4';
   SYSTEM_PROMPT =
@@ -29,6 +29,7 @@ const
     '  CALL_AGENT READ_FILE "filename"                -- this will read the content from "filename" and return it as an assistant prompt (will return "could not load file "filename"", if not existing)'#13#10+
     '  CALL_AGENT BROWSE_SITE "URL" "instruction"     -- this will read the content of a specific URL, and performs a transformation of the result based on the instruction'#13#10+
     '  CALL_AGENT SEARCH_GOOGLE "query"               -- this will execute the google search for the given query and returns a short summary and a link-list'#13#10+
+    '  CALL_AGENT LIST_FILES                          -- this will list the files in your workingspace and return the list as a string'#13#10+
     '  CALL_AGENT WRITE_MEMORY "memorycontent"        '+
     '-- this will append any important information into your longterm memory, keep in mind that appending to your longterm memory decreases your working prompt size, since it will be appended everytime (0 = success, 1 = failure) '#13#10+
     '  CALL_AGENT GPT_TASK "task" "input"                  -- this will spawn a dedicated ChatGPT-Instance, to do a task with your given input. Keep in mind that the GPT-agent has no knowledge of your agenda and no internet access'#13#10+
@@ -52,7 +53,7 @@ type
   CALL_AGENT GPT "task" "input"   }
 
   TResponseStructureType = (rstInternalThoughts=0, rstPlan=1, rstCriticism=2, rstAction=3);
-  TAgentType = (atUser, atWriteFile, atReadFile, atBrowseSite, atSearchGoogle, atWriteMemory, atGPT);
+  TAgentType = (atUser, atWriteFile, atReadFile, atBrowseSite, atSearchGoogle, atWriteMemory, atGPT, atListFiles);
   TActionType = (atThinking, atCallAgent, atFinished);
   TAutoGPTAction = record
     ActionType: TActionType;
@@ -73,6 +74,7 @@ type
     FUserCallback:TUserCallback;
     function CreateSystemPrompt:TChatMessageBuild;
     function GetCompletion:string;
+    function ExtendMemory(const AMemory:string):string;
     function ParseResponse(const AResponse:string;out Thoughts:string; out Plan:string; out Criticism:string; out Action:TAutoGPTAction; out StructureValid:Boolean):string;
     function ParseAction(const AActionStr:string;out Action:TAutoGPTAction; out StructureValid:Boolean):string;
   public
@@ -83,8 +85,8 @@ type
     function MemoryToString:string;
   end;
   const
-    AGENT_PARAM_COUNT: array[TAgentType] of Integer = (1,2,1,2,1,1,2);
-    AGENT_NAMES:array[TAgentType] of string = ('USER','WRITE_FILE','READ_FILE','BROWSE_SITE','SEARCH_GOOGLE','WRITE_MEMORY','GPT_TASK');
+    AGENT_PARAM_COUNT: array[TAgentType] of Integer = (1,2,1,2,1,1,2,0);
+    AGENT_NAMES:array[TAgentType] of string = ('USER','WRITE_FILE','READ_FILE','BROWSE_SITE','SEARCH_GOOGLE','WRITE_MEMORY','GPT_TASK','LIST_FILES');
     ACTION_NAMES : array[TActionType] of string = ('THINKING','CALL_AGENT','FINISHED');
 
 implementation
@@ -109,6 +111,12 @@ end;
 function TAutoGPTManager.CreateSystemPrompt: TChatMessageBuild;
 begin
   Result:= TChatMessageBuild.Create(TMessageRole.System, Format(SYSTEM_PROMPT,[FLongTermMemory])+FGoal);
+end;
+
+function TAutoGPTManager.ExtendMemory(const AMemory: string): string;
+begin
+  FLongTermMemory:= FLongTermMemory+ #13#10 + AMemory;
+  Result:= 'Memory successfully added';
 end;
 
 function TAutoGPTManager.GetCompletion: string;
@@ -182,7 +190,7 @@ begin
   else
   begin
     StructureValid:=False;
-    Result:= 'Invalid Action or nonexistent Action specified';
+    Result:= 'Invalid action or nonexistent action specified';
     Exit;
   end;
 
@@ -370,7 +378,7 @@ begin
           atReadFile: LAgent:=TAgentReadFile.Create(FWorkingDir);
           atBrowseSite: LAgent:= TAgentBrowse.Create(FApiKeyOpenAI);
           atSearchGoogle: LAgent:= TAgentGoogleSearch.Create(FApiKeyOpenAI,FApiKeyGoogle,FGoogleSearchEngineID);
-          atWriteMemory: ;
+          atWriteMemory: LAgent:= TAgentMemory.Create(ExtendMemory);
           atGPT: LAgent:= TAgentGPT35.Create(FApiKeyOpenAI);
         end;
         {
