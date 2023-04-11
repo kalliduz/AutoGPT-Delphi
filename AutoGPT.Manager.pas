@@ -211,7 +211,7 @@ begin
     first we try to determine the action type
   }
   LActionType:=atThinking;
-
+  LActionPosition:=0;
   for LType := Low(TActionType) to High(TActionType) do
   begin
     LPos:= Pos(ACTION_NAMES[LType],AActionStr);
