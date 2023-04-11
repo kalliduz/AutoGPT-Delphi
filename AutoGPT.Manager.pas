@@ -6,6 +6,7 @@ uses
   Agent.User, Agent.Memory, Agent.ListFiles;
 const
   MAIN_GPT_MODEL = 'gpt-4';
+  MAX_TOKENS = 8192;
   SYSTEM_PROMPT =
     'You are AutoGPT, an AI-agent that is able to execute a specific task completely autonomously.'#13#10+
     ''#13#10+
@@ -77,6 +78,7 @@ type
     function ExtendMemory(const AMemory:string):string;
     function ParseResponse(const AResponse:string;out Thoughts:string; out Plan:string; out Criticism:string; out Action:TAutoGPTAction; out StructureValid:Boolean):string;
     function ParseAction(const AActionStr:string;out Action:TAutoGPTAction; out StructureValid:Boolean):string;
+    function GetTokenCount(const AString:string):Integer;
   public
     constructor Create( const AGoal:string;const AApiKeyOpenAI:string;
                         const AWorkingDir:string;const AApiKeyGoogle:string;
@@ -123,15 +125,40 @@ function TAutoGPTManager.GetCompletion: string;
 var
   LChat:TChat;
   LChoice:TChatChoices;
+  LPartialMemory:TArray<TChatMessageBuild>;
+  i:Integer;
+  LTokensUsed:Integer;
 begin
   Result:='';
+  {
+    at first we need to shrink our memory size to the maximum that the model can take
+  }
+
+  Insert(FMemory[0],LPartialMemory,0);   // we always need our system prompt
+  LTokensUsed:=GetTokenCount(LPartialMemory[0].Content);
+  for i := High(FMemory) downto Low(FMemory)+1 do
+  begin
+    {
+     we want at least 256 tokens for the completion
+    }
+    if LTokensUsed > (MAX_TOKENS - 256 )then
+      Break;
+    {
+      we insert the latest messages backwards, until the prompt gets too long
+    }
+    Insert(FMemory[i],LPartialMemory,1);
+    LTokensUsed:=LTokensUsed + GetTokenCount(LPartialMemory[1].Content);
+
+  end;
+
+
   {
     send the messages to OpenAI
   }
   LChat:= FOpenAI.Chat.Create(  procedure(Params: TChatParams)
   begin
-    Params.Messages(FMemory);
-    Params.MaxTokens(4096); //TODO: should be configurable
+    Params.Messages(LPartialMemory);
+    Params.MaxTokens(MAX_TOKENS - LTokensUsed); //max mode tokens - amount of tokens for the messages
     Params.Model(MAIN_GPT_MODEL);
   end);
   try
@@ -140,6 +167,16 @@ begin
   finally
     LChat.Free;
   end;
+end;
+
+function TAutoGPTManager.GetTokenCount(const AString: string): Integer;
+begin
+  {
+    https://help.openai.com/en/articles/4936856-what-are-tokens-and-how-to-count-them
+    OpenAI states english is around 1 token every 4 chars. So we guess conservative by 1:3
+  }
+  //TODO: implement tokenizer access for exact calculation of used tokens
+  Result:= length(AString) div 3 + 1;
 end;
 
 function TAutoGPTManager.MemoryToString: string;
