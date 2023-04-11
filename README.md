@@ -1,5 +1,5 @@
 # AutoGPT-Delphi
-This is an experiment to create a fully autonomous GPT-instance to solve arbitrary Tasks. Its functionality is similar to AutoGPT(Python), BabyAGI or Jarvis
+This is an experiment to create a fully autonomous GPT-instance to solve arbitrary Tasks. Its functionality is similar to Auto-GPT(https://github.com/Torantulino/Auto-GPT), BabyAGI(https://github.com/yoheinakajima/babyagi) or Jarvis(https://github.com/microsoft/JARVIS)
 ## Requirements
   - Delphi OpenAI API implementation from https://github.com/HemulGM/DelphiOpenAI
   - OpenAI API key (https://platform.openai.com/account/api-keys)
@@ -11,7 +11,7 @@ but at the current point, the consistency is not really what you'd want.
 ## Plans for the future
   - Improve the system prompt to make even GPT 3.5 understand it
   - rewrite the agent syntax to be easier parseable
-  - introduce more agents (Txt2Img, Compiling, FileListing)
+  - introduce more agents (Txt2Img, Compiling)
   - introduce asynchronous calls to utilize to full power of parallel agents
 ## Implementation
 
