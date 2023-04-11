@@ -8,8 +8,9 @@ type
   TAgentReadFile = class(TAgent)
   private
     FWorkingDir:string;
+  protected
+    function CallAgentInternal(AParams:TAgentParams):string;override;
   public
-    function CallAgent(AParams:TAgentParams):string;override;
     constructor Create(const AWorkingDir:string);
   end;
 
@@ -17,11 +18,12 @@ implementation
 
 { TAgentReadFile }
 
-function TAgentReadFile.CallAgent(AParams: TAgentParams): string;
+function TAgentReadFile.CallAgentInternal(AParams: TAgentParams): string;
 var
   LFullFileName:string;
   LStr:TStrings;
 begin
+  inherited;
   Result:='';
   LFullFileName:=TPath.Combine(IncludeTrailingPathDelimiter(FWorkingDir),AParams[0]);
   if FileExists(LFullFileName) then

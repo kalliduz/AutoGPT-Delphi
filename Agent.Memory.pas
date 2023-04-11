@@ -9,8 +9,9 @@ type
   TAgentMemory = class(TAgent)
   private
     FMemoryCallback: TMemoryCallback;
+  protected
+    function CallAgentInternal(AParams:TAgentParams):string;override;
   public
-    function CallAgent(AParams:TAgentParams):string;override;
     constructor Create(AMemoryCallback:TMemoryCallback);
   end;
 
@@ -18,8 +19,9 @@ implementation
 
 { TAgentMemory }
 
-function TAgentMemory.CallAgent(AParams: TAgentParams): string;
+function TAgentMemory.CallAgentInternal(AParams: TAgentParams): string;
 begin
+  inherited;
   if Assigned(FMemoryCallback) then
     Result:=FMemoryCallback(AParams[0])
   else

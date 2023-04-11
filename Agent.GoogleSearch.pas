@@ -11,8 +11,9 @@ type
     FApiKeyOpenAI:string;
     FApiKeyGoogle:string;
     FSearchEngineID:string;
+  protected
+      function CallAgentInternal(AParams:TAgentParams):string; override;
   public
-    function CallAgent(AParams:TAgentParams):string; override;
     constructor Create(const AOpenAIApiKey:string;const AGoogleAPIKey:string;const ASearchEngineID:string);
   end;
 
@@ -67,11 +68,13 @@ begin
   end;
 end;
 
-function TAgentGoogleSearch.CallAgent(AParams: TAgentParams): string;
+function TAgentGoogleSearch.CallAgentInternal(AParams: TAgentParams): string;
 var
   LSumAgent:TAgentGPT35;
 begin
+  inherited;
   Result:=GoogleSearch( AParams[0], FApiKeyGoogle,FSearchEngineID);
+  LogDebugMessage('Raw response: '+Result);
   {
     we got our content, now we execute the specified instruction with GPT-3
   }
@@ -89,6 +92,7 @@ begin
   FApiKeyGoogle:=AGoogleAPIKey;
   FApiKeyOpenAI:=AOpenAIApiKey;
   FSearchEngineID:=ASearchEngineID;
+
 end;
 
 end.

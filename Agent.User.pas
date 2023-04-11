@@ -10,9 +10,10 @@ type
   TAgentUser = class(TAgent)
   private
     FUserCallback:TUserCallback;
+  protected
+    function CallAgentInternal(AParams:TAgentParams):string;override;
   public
     constructor Create(AUserCallback:TUserCallback);
-    function CallAgent(AParams:TAgentParams):string;override;
   end;
 
 
@@ -20,8 +21,9 @@ implementation
 
 { TAgentUser }
 
-function TAgentUser.CallAgent(AParams: TAgentParams): string;
+function TAgentUser.CallAgentInternal(AParams: TAgentParams): string;
 begin
+  inherited;
   if Assigned(FUserCallback) then
     Result:= FUserCallback(StringReplace(AParams[0],'\n',#13#10,[rfReplaceAll]))
   else

@@ -8,8 +8,9 @@ type
   TAgentBrowse = class(TAgent)
   private
     FApiKey:string;
+  protected
+    function CallAgentInternal(AParams:TAgentParams):string;override;
   public
-     function CallAgent(AParams:TAgentParams):string;override;
     constructor Create(const AApiKey:string);
   end;
 
@@ -95,11 +96,12 @@ end;
 
 { TAgentBrowse }
 
-function TAgentBrowse.CallAgent(AParams: TAgentParams): string;
+function TAgentBrowse.CallAgentInternal(AParams: TAgentParams): string;
 var
   LContent:string;
   LSumAgent:TAgentGPT35;
 begin
+  inherited;
   LContent:= StripHtmlMarkup(GetWebContent(AParams[0]));
 
   {

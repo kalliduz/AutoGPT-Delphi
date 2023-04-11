@@ -3,7 +3,7 @@
 interface
 uses
   Types, Classes, OpenAI, OpenAI.Chat, OpenAI.Completions, Agent, Agent.GPT, Agent.ReadFile, Agent.WriteFile, Agent.Browse, Agent.GoogleSearch,
-  Agent.User, Agent.Memory, Agent.ListFiles;
+  Agent.User, Agent.Memory, Agent.ListFiles, Logging;
 const
   MAIN_GPT_MODEL = 'gpt-4';
   MAX_TOKENS = 8192;
@@ -108,6 +108,8 @@ begin
   FOpenAI:=TOpenAI.Create(AApiKeyOpenAI);
   setlength(FMemory,1);
   FMemory[0]:=CreateSystemPrompt; //set the initial state of the model
+  //initialize logging
+  TLogger.LogFile:=ChangeFileExt(ParamStr(0),'.log');
 end;
 
 function TAutoGPTManager.CreateSystemPrompt: TChatMessageBuild;

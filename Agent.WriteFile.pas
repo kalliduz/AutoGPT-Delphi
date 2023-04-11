@@ -8,8 +8,9 @@ type
   TAgentWriteFile = class(TAgent)
   private
     FWorkingDir:string;
+  protected
+    function CallAgentInternal(AParams:TAgentParams):string;override;
   public
-    function CallAgent(AParams:TAgentParams):string;override;
     constructor Create(const AWorkingDir:string);
   end;
 
@@ -17,11 +18,12 @@ implementation
 
 { TAgentReadFile }
 
-function TAgentWriteFile.CallAgent(AParams: TAgentParams): string;
+function TAgentWriteFile.CallAgentInternal(AParams: TAgentParams): string;
 var
   LFullFileName:string;
   LStr:TStrings;
 begin
+  inherited;
   Result:='1';
   LFullFileName:=TPath.Combine(IncludeTrailingPathDelimiter(FWorkingDir),AParams[0]);
   LStr:=TStringList.Create;

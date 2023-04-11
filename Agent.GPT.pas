@@ -9,10 +9,12 @@ type
   private
     FOpenAI:TOpenAI;
     function GetModel:string;virtual;abstract;
+  protected
+    function CallAgentInternal(AParams:TAgentParams):string;override;
   public
     constructor Create(const AAPIKey:string);
     destructor Destroy;
-    function CallAgent(AParams:TAgentParams):string;override;
+
   end;
 
   TAgentGPT35 = class(TAgentGPT)
@@ -31,12 +33,13 @@ uses
   SysUtils;
 
 
-function TAgentGPT.CallAgent(AParams: TAgentParams): string;
+function TAgentGPT.CallAgentInternal(AParams: TAgentParams): string;
 var
   LChat:TChat;
   LChoice:TChatChoices;
   LMessages:TArray<TChatMessageBuild>;
 begin
+  inherited;
   Result:='';
   {
     prepare the message
