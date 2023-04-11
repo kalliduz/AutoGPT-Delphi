@@ -3,7 +3,7 @@
 interface
 uses
   Types, Classes, OpenAI, OpenAI.Chat, OpenAI.Completions, Agent, Agent.GPT, Agent.ReadFile, Agent.WriteFile, Agent.Browse, Agent.GoogleSearch,
-  Agent.User, Agent.Memory;
+  Agent.User, Agent.Memory, Agent.ListFiles;
 const
   MAIN_GPT_MODEL = 'gpt-4';
   SYSTEM_PROMPT =
@@ -131,7 +131,7 @@ begin
   LChat:= FOpenAI.Chat.Create(  procedure(Params: TChatParams)
   begin
     Params.Messages(FMemory);
-    Params.MaxTokens(2048); //TODO: should be configurable
+    Params.MaxTokens(4096); //TODO: should be configurable
     Params.Model(MAIN_GPT_MODEL);
   end);
   try
@@ -380,6 +380,7 @@ begin
           atSearchGoogle: LAgent:= TAgentGoogleSearch.Create(FApiKeyOpenAI,FApiKeyGoogle,FGoogleSearchEngineID);
           atWriteMemory: LAgent:= TAgentMemory.Create(ExtendMemory);
           atGPT: LAgent:= TAgentGPT35.Create(FApiKeyOpenAI);
+          atListFiles: LAgent:=TAgentListFiles.Create(FWorkingDir);
         end;
         {
           call the agent

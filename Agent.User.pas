@@ -2,7 +2,7 @@
 
 interface
 uses
-  Agent;
+  Agent, SysUtils;
 
 type
 
@@ -23,7 +23,7 @@ implementation
 function TAgentUser.CallAgent(AParams: TAgentParams): string;
 begin
   if Assigned(FUserCallback) then
-    Result:= FUserCallback(AParams[0])
+    Result:= FUserCallback(StringReplace(AParams[0],'\n',#13#10,[rfReplaceAll]))
   else
     Result:= 'The user didn''t provide any feedback';
 end;
