@@ -62,7 +62,7 @@ type
     AgentParams: TArray<string>;
   end;
 
-  TAutoGPTManager = class
+  TAutoGPTManagerSynced = class
   private
     FOpenAI:TOpenAI;
     FApiKeyOpenAI:string;
@@ -86,6 +86,27 @@ type
     procedure RunOneStep;
     function MemoryToString:string;
   end;
+
+  TStepCompletedEvent = procedure of object;
+  TAutoGPTManager = class(TThread)
+  private
+    FManagerSynced:TAutoGPTManagerSynced;
+    FMemory:string;
+    FRunning:Boolean;
+    FShouldRun:Boolean;
+    FStepCompletedEvent:TStepCompletedEvent;
+    procedure StepCompletedSync;
+  protected
+    procedure Execute;override;
+  public
+    constructor Create( const AGoal:string;const AApiKeyOpenAI:string;
+                        const AWorkingDir:string;const AApiKeyGoogle:string;
+                        const AGoogleSearchEngineID:string; const AUserCallback:TUserCallback; const AStepCompletedEvent:TStepCompletedEvent);
+    destructor Destroy;
+    procedure RunOneStep;
+    property Memory:string read FMemory;
+    property IsRunning:Boolean read FRunning;
+  end;
   const
     AGENT_PARAM_COUNT: array[TAgentType] of Integer = (1,2,1,2,1,1,2,0);
     AGENT_NAMES:array[TAgentType] of string = ('USER','WRITE_FILE','READ_FILE','BROWSE_SITE','SEARCH_GOOGLE','WRITE_MEMORY','GPT_TASK','LIST_FILES');
@@ -96,7 +117,7 @@ implementation
 { TAutoGPTManager }
 uses
   SysUtils;
-constructor TAutoGPTManager.Create(const AGoal:string;const AApiKeyOpenAI:string;const AWorkingDir:string;
+constructor TAutoGPTManagerSynced.Create(const AGoal:string;const AApiKeyOpenAI:string;const AWorkingDir:string;
                                     const AApiKeyGoogle:string;const AGoogleSearchEngineID:string; const AUserCallback:TUserCallback);
 begin
   FGoal:=AGoal;
@@ -112,18 +133,18 @@ begin
   TLogger.LogFile:=ChangeFileExt(ParamStr(0),'.log');
 end;
 
-function TAutoGPTManager.CreateSystemPrompt: TChatMessageBuild;
+function TAutoGPTManagerSynced.CreateSystemPrompt: TChatMessageBuild;
 begin
   Result:= TChatMessageBuild.Create(TMessageRole.System, Format(SYSTEM_PROMPT,[FLongTermMemory])+FGoal);
 end;
 
-function TAutoGPTManager.ExtendMemory(const AMemory: string): string;
+function TAutoGPTManagerSynced.ExtendMemory(const AMemory: string): string;
 begin
   FLongTermMemory:= FLongTermMemory+ #13#10 + AMemory;
   Result:= 'Memory successfully added';
 end;
 
-function TAutoGPTManager.GetCompletion: string;
+function TAutoGPTManagerSynced.GetCompletion: string;
 var
   LChat:TChat;
   LChoice:TChatChoices;
@@ -171,7 +192,7 @@ begin
   end;
 end;
 
-function TAutoGPTManager.GetTokenCount(const AString: string): Integer;
+function TAutoGPTManagerSynced.GetTokenCount(const AString: string): Integer;
 begin
   {
     https://help.openai.com/en/articles/4936856-what-are-tokens-and-how-to-count-them
@@ -181,7 +202,7 @@ begin
   Result:= length(AString) div 3 + 1;
 end;
 
-function TAutoGPTManager.MemoryToString: string;
+function TAutoGPTManagerSynced.MemoryToString: string;
 var
   i: Integer;
 begin
@@ -196,7 +217,7 @@ begin
   end;
 end;
 
-function TAutoGPTManager.ParseAction(const AActionStr: string;
+function TAutoGPTManagerSynced.ParseAction(const AActionStr: string;
   out Action: TAutoGPTAction; out StructureValid: Boolean): string;
 var
   LActionType:TActionType;
@@ -304,7 +325,7 @@ begin
 
 end;
 
-function TAutoGPTManager.ParseResponse(const AResponse:string;out Thoughts:string; out Plan:string;
+function TAutoGPTManagerSynced.ParseResponse(const AResponse:string;out Thoughts:string; out Plan:string;
 out Criticism:string; out Action:TAutoGPTAction; out StructureValid:Boolean):string;
 const
   conResponseKeywords: array[TResponseStructureType] of string = ('INTERNAL_THOUGHTS', 'PLAN', 'CRITICISM', 'ACTION');
@@ -365,7 +386,7 @@ begin
   Result:= ParseAction(LData[rstAction],Action,StructureValid);
 end;
 
-procedure TAutoGPTManager.RunOneStep;
+procedure TAutoGPTManagerSynced.RunOneStep;
 var
   LModelResponse:string;
   LPlan,LThoughts,LCritic:string;
@@ -441,6 +462,65 @@ begin
     end;
   end;
 
+end;
+
+{ TAutoGPTManager }
+
+constructor TAutoGPTManager.Create(const AGoal, AApiKeyOpenAI, AWorkingDir,
+  AApiKeyGoogle, AGoogleSearchEngineID: string;
+  const AUserCallback: TUserCallback;const AStepCompletedEvent:TStepCompletedEvent);
+begin
+  inherited Create(False);
+  FManagerSynced:= TAutoGPTManagerSynced.Create(AGoal,AApiKeyOpenAI,AWorkingDir,AApiKeyGoogle,AGoogleSearchEngineID,AUserCallback);
+  FMemory:=FManagerSynced.MemoryToString;
+  FRunning:=False;
+  FShouldRun:=False;
+  FStepCompletedEvent:=AStepCompletedEvent;
+end;
+
+destructor TAutoGPTManager.Destroy;
+begin
+  FManagerSynced.Free;
+end;
+
+procedure TAutoGPTManager.Execute;
+begin
+  inherited;
+  while True do
+  begin
+    if FShouldRun then
+    begin
+      FShouldRun:=False;
+      FRunning:=True;
+      try
+        try
+          FManagerSynced.RunOneStep;
+          FMemory:=FManagerSynced.MemoryToString;
+        except
+         //TODO: forward exception as status
+        end;
+      finally
+        Synchronize(StepCompletedSync);
+        FRunning:=False;
+      end;
+    end
+    else
+      Sleep(10);
+  end;
+end;
+
+procedure TAutoGPTManager.RunOneStep;
+begin
+  if not FRunning then
+  begin
+    FShouldRun:=True;
+  end;
+end;
+
+procedure TAutoGPTManager.StepCompletedSync;
+begin
+  if Assigned(FStepCompletedEvent) then
+    FStepCompletedEvent();
 end;
 
 end.
