@@ -49,13 +49,6 @@ const
     #13#10+
     'Here is the task to execute:'#13#10;
 type
-  {CALL_AGENT USER "input"
-  CALL_AGENT WRITE_FILE "filenam
-  CALL_AGENT READ_FILE "filename
-  CALL_AGENT BROWSE_SITE "URL"
-  CALL_AGENT SEARCH_GOOGLE "quer
-  CALL_AGENT WRITE_MEMORY "memor
-  CALL_AGENT GPT "task" "input"   }
 
   TResponseStructureType = (rstInternalThoughts=0, rstPlan=1, rstCriticism=2, rstAction=3);
   TAgentType = (atUser, atWriteFile, atReadFile, atBrowseSite, atSearchGoogle, atWriteMemory, atGPT, atListFiles, atRunCMD);
