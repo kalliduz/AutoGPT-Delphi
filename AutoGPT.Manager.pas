@@ -3,7 +3,7 @@
 interface
 uses
   Types, Classes, OpenAI, OpenAI.Chat, OpenAI.Completions, Agent, Agent.GPT, Agent.ReadFile, Agent.WriteFile, Agent.Browse, Agent.GoogleSearch,
-  Agent.User, Agent.Memory, Agent.ListFiles, Logging;
+  Agent.User, Agent.Memory, Agent.ListFiles, Agent.CMD, Logging;
 const
   MAIN_GPT_MODEL = 'gpt-4';
   MAX_TOKENS = 8192;
@@ -25,16 +25,20 @@ const
     '  You will use CALL_AGENT, whenever you need to execute a task, that you cannot do as a language model.'#13#10+
     'Here is a list of available agents, with their respective parameters and results'#13#10+
     ''#13#10+
-    '  CALL_AGENT USER "input"                        -- this will prompt the user for input, you will get the result as a user prompt'#13#10+
-    '  CALL_AGENT WRITE_FILE "filename" "content"     -- this will write a file with the given name and content, it will return "0" or "1" as an assistant prompt (0 = success, 1 = failure)'#13#10+
-    '  CALL_AGENT READ_FILE "filename"                -- this will read the content from "filename" and return it as an assistant prompt (will return "could not load file "filename"", if not existing)'#13#10+
-    '  CALL_AGENT BROWSE_SITE "URL" "instruction"     -- this will read the content of a specific URL, and performs a transformation of the result based on the instruction'#13#10+
-    '  CALL_AGENT SEARCH_GOOGLE "query"               -- this will execute the google search for the given query and returns a short summary and a link-list'#13#10+
+    '  CALL_AGENT USER $input$                        -- this will prompt the user for input, you will get the result as a user prompt'#13#10+
+    '  CALL_AGENT WRITE_FILE $filename$ $content$     -- this will write a file with the given name and content, it will return "0" or "1" as an assistant prompt (0 = success, 1 = failure)'#13#10+
+    '  CALL_AGENT READ_FILE $filename$                -- this will read the content from "filename" and return it as an assistant prompt (will return "could not load file "filename"", if not existing)'#13#10+
+    '  CALL_AGENT BROWSE_SITE $URL$ $instruction$     -- this will read the content of a specific URL, and performs a transformation of the result based on the instruction'#13#10+
+    '  CALL_AGENT SEARCH_GOOGLE $query$               -- this will execute the google search for the given query and returns a short summary and a link-list'#13#10+
     '  CALL_AGENT LIST_FILES                          -- this will list the files in your workingspace and return the list as a string'#13#10+
-    '  CALL_AGENT WRITE_MEMORY "memorycontent"        '+
+    '  CALL_AGENT RUN_CMD  $command$                  -- this will execute the cmd /c and appends everything specified in $command$. '#13#10+
+    ' It will return the stdoutput from the execution as a string. You can also use this to execute other programs.'#13#10+
+    '  CALL_AGENT WRITE_MEMORY $memorycontent$        '+
     '-- this will append any important information into your longterm memory, keep in mind that appending to your longterm memory decreases your working prompt size, since it will be appended everytime (0 = success, 1 = failure) '#13#10+
-    '  CALL_AGENT GPT_TASK "task" "input"                  -- this will spawn a dedicated ChatGPT-Instance, to do a task with your given input. Keep in mind that the GPT-agent has no knowledge of your agenda and no internet access'#13#10+
+    '  CALL_AGENT GPT_TASK $task$ $input$                  -- this will spawn a dedicated ChatGPT-Instance, to do a task with your given input. Keep in mind that the GPT-agent has no knowledge of your agenda and no internet access'#13#10+
     '  '#13#10+
+    'Please keep in mind, that all CALL_AGENT parameters need to be enclosed with the dollar sign $ to be valid.'#13#10+
+    'e.g. CALL_AGENT WRITE_FILE $example.txt$ $this is example content$ '#13#10+
     'Lastly there is the "FINISHED" keyword'#13#10+
     'If you write FINISHED as an output, you will state that your ultimate goal is reached, and you don''t have anything to do'#13#10+
     #13#10+
@@ -54,7 +58,7 @@ type
   CALL_AGENT GPT "task" "input"   }
 
   TResponseStructureType = (rstInternalThoughts=0, rstPlan=1, rstCriticism=2, rstAction=3);
-  TAgentType = (atUser, atWriteFile, atReadFile, atBrowseSite, atSearchGoogle, atWriteMemory, atGPT, atListFiles);
+  TAgentType = (atUser, atWriteFile, atReadFile, atBrowseSite, atSearchGoogle, atWriteMemory, atGPT, atListFiles, atRunCMD);
   TActionType = (atThinking, atCallAgent, atFinished);
   TAutoGPTAction = record
     ActionType: TActionType;
@@ -95,6 +99,7 @@ type
     FRunning:Boolean;
     FShouldRun:Boolean;
     FStepCompletedEvent:TStepCompletedEvent;
+    FTerminated:Boolean;
     procedure StepCompletedSync;
   protected
     procedure Execute;override;
@@ -102,14 +107,15 @@ type
     constructor Create( const AGoal:string;const AApiKeyOpenAI:string;
                         const AWorkingDir:string;const AApiKeyGoogle:string;
                         const AGoogleSearchEngineID:string; const AUserCallback:TUserCallback; const AStepCompletedEvent:TStepCompletedEvent);
-    destructor Destroy;
+    destructor Destroy;override;
     procedure RunOneStep;
+    procedure Terminate;
     property Memory:string read FMemory;
     property IsRunning:Boolean read FRunning;
   end;
   const
-    AGENT_PARAM_COUNT: array[TAgentType] of Integer = (1,2,1,2,1,1,2,0);
-    AGENT_NAMES:array[TAgentType] of string = ('USER','WRITE_FILE','READ_FILE','BROWSE_SITE','SEARCH_GOOGLE','WRITE_MEMORY','GPT_TASK','LIST_FILES');
+    AGENT_PARAM_COUNT: array[TAgentType] of Integer = (1,2,1,2,1,1,2,0,1);
+    AGENT_NAMES:array[TAgentType] of string = ('USER','WRITE_FILE','READ_FILE','BROWSE_SITE','SEARCH_GOOGLE','WRITE_MEMORY','GPT_TASK','LIST_FILES','RUN_CMD');
     ACTION_NAMES : array[TActionType] of string = ('THINKING','CALL_AGENT','FINISHED');
 
 implementation
@@ -261,19 +267,21 @@ begin
       {
         first we need to find out the agent-type
       }
-      LAgentPos:=0;
+      LAgentPos:=MaxInt;
 
       for LAgentType := Low(TAgentType) to High(TAgentType) do
       begin
         LPos:=Pos(AGENT_NAMES[LAgentType],AActionStr,LActionPosition+1);
-        if LPos > 0 then
+        {
+          we search for the earliest occurence of an agent name
+        }
+        if (LPos > 0) AND (LPos < LAgentPos) then
         begin
           Action.AgentType:=LAgentType;
           LAgentPos:=LPos;
-          break;
         end;
       end;
-      if LAgentPos = 0 then
+      if LAgentPos = MaxInt then
       begin
         StructureValid:= False;
         Result:='The agent type your requested doesn''t exist';
@@ -287,10 +295,10 @@ begin
       LLastQuote:=LAgentPos+1;
       while True do
       begin
-        LStart:=Pos('"',AActionStr,LLastQuote);
+        LStart:=Pos('$',AActionStr,LLastQuote);
         if LStart > 0 then
         begin
-          LEnd:= Pos('"', AActionStr, LStart+1);
+          LEnd:= Pos('$', AActionStr, LStart+1);
           if LEnd > 0 then
           begin
             {
@@ -441,6 +449,7 @@ begin
           atWriteMemory: LAgent:= TAgentMemory.Create(ExtendMemory);
           atGPT: LAgent:= TAgentGPT35.Create(FApiKeyOpenAI);
           atListFiles: LAgent:=TAgentListFiles.Create(FWorkingDir);
+          atRunCMD: LAgent:=TAgentCMD.Create;
         end;
         {
           call the agent
@@ -474,19 +483,21 @@ begin
   FManagerSynced:= TAutoGPTManagerSynced.Create(AGoal,AApiKeyOpenAI,AWorkingDir,AApiKeyGoogle,AGoogleSearchEngineID,AUserCallback);
   FMemory:=FManagerSynced.MemoryToString;
   FRunning:=False;
+  FTerminated:=False;
   FShouldRun:=False;
   FStepCompletedEvent:=AStepCompletedEvent;
 end;
 
 destructor TAutoGPTManager.Destroy;
 begin
+  Terminate;
   FManagerSynced.Free;
 end;
 
 procedure TAutoGPTManager.Execute;
 begin
   inherited;
-  while True do
+  while not FTerminated do
   begin
     if FShouldRun then
     begin
@@ -521,6 +532,11 @@ procedure TAutoGPTManager.StepCompletedSync;
 begin
   if Assigned(FStepCompletedEvent) then
     FStepCompletedEvent();
+end;
+
+procedure TAutoGPTManager.Terminate;
+begin
+  FTerminated:= True;
 end;
 
 end.
