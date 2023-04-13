@@ -69,6 +69,7 @@ const
     '  ]'+sLineBreak+
     '}'+
     'ActionType can either be "THINKING", "FINISHED" or "CALL_AGENT" '+sLineBreak+
+    'Make sure that you don''t use an Agent as the ActionType!'+sLineBreak+
     'You can use the "THINKING"-ActionType to elaborate on your plan, or if you don''t have any action to execute right now.'+sLineBreak+
     'You will use "CALL_AGENT"-ActionType, whenever you need to execute a task, that you cannot do as a language model.'+sLineBreak+
     'When using "CALL_AGENT"-ActionType, you have to provide an "AGENT" from the list below:'+sLineBreak+
@@ -99,6 +100,17 @@ type
     AgentParams: TArray<string>;
   end;
 
+  TStepData = record
+    Thoughts:string;
+    Plan:string;
+    Criticism:string;
+    Action:TActionType;
+    Agent:TAgentType;
+    Params:string;
+    Success:Boolean;
+    ErrorMessage:string;
+  end;
+
   TAutoGPTManagerSynced = class
   private
     FOpenAI:TOpenAI;
@@ -109,6 +121,7 @@ type
     FLongTermMemory:string;
     FGoal:string;
     FWorkingDir:string;
+    FLastStep:TStepData;
     FUserCallback:TUserCallback;
     function CreateSystemPrompt:TChatMessageBuild;
     function GetCompletion:string;
@@ -134,6 +147,7 @@ type
     FStepCompletedEvent:TStepCompletedEvent;
     FTerminated:Boolean;
     FUserPrompt:string;
+    FLastStep:TStepData;
     FUserResponse:string;
     procedure StepCompletedSync;
     procedure SyncPromptUser;
@@ -148,6 +162,7 @@ type
     procedure RunOneStep;
     procedure Terminate;
     property Memory:string read FMemory;
+    property LastStep:TStepData read FLastStep;
     property IsRunning:Boolean read FRunning;
   end;
   const
@@ -423,6 +438,14 @@ begin
     now we try to understand what the model wants
   }
   LError:= ParseJSONResponse(LModelResponse,LThoughts,LPlan,LCritic,LAction,LValid);
+  FLastStep.Thoughts:=LThoughts;
+  FLastStep.Plan:=LPlan;
+  FLastStep.Criticism:=LCritic;
+  FLastStep.Action:=LAction.ActionType;
+  FLastStep.Agent:=LAction.AgentType;
+  FLastStep.Params:=string.Join(',',LAction.AgentParams);
+  FLastStep.Success:=LValid;
+  FLastStep.ErrorMessage:=LError;
 
   if not LValid then
   begin
@@ -510,6 +533,7 @@ begin
         try
           FManagerSynced.RunOneStep;
           FMemory:=FManagerSynced.MemoryToString;
+          FLastStep:=FManagerSynced.FLastStep;
         except
          //TODO: forward exception as status
         end;
