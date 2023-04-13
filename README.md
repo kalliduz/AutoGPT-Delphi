@@ -1,5 +1,5 @@
 # AutoGPT-Delphi
-This is an experiment to create a fully autonomous GPT-instance to solve arbitrary Tasks. Its functionality is similar to Auto-GPT(https://github.com/Torantulino/Auto-GPT), BabyAGI(https://github.com/yoheinakajima/babyagi) or Jarvis(https://github.com/microsoft/JARVIS).
+This is an experiment to create a fully autonomous GPT-instance to solve arbitrary Tasks. Its functionality is similar to Auto-GPT(https://github.com/Torantulino/Auto-GPT) or BabyAGI(https://github.com/yoheinakajima/babyagi).
 
 ⚠ Since the program can potentially execute harmful operations, it's recommended to run it inside a VM ⚠
 
