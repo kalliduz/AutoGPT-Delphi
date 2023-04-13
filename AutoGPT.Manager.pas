@@ -130,9 +130,14 @@ type
     FMemory:string;
     FRunning:Boolean;
     FShouldRun:Boolean;
+    FUserPromptCallback:TUserCallback;
     FStepCompletedEvent:TStepCompletedEvent;
     FTerminated:Boolean;
+    FUserPrompt:string;
+    FUserResponse:string;
     procedure StepCompletedSync;
+    procedure SyncPromptUser;
+    function PromptUserInternal(const APrompt:string):string;
   protected
     procedure Execute;override;
   public
@@ -477,8 +482,9 @@ constructor TAutoGPTManager.Create(const AGoal, AApiKeyOpenAI, AWorkingDir,
   const AUserCallback: TUserCallback;const AStepCompletedEvent:TStepCompletedEvent);
 begin
   inherited Create(False);
-  FManagerSynced:= TAutoGPTManagerSynced.Create(AGoal,AApiKeyOpenAI,AWorkingDir,AApiKeyGoogle,AGoogleSearchEngineID,AUserCallback);
+  FManagerSynced:= TAutoGPTManagerSynced.Create(AGoal,AApiKeyOpenAI,AWorkingDir,AApiKeyGoogle,AGoogleSearchEngineID,PromptUserInternal);
   FMemory:=FManagerSynced.MemoryToString;
+  FUserPromptCallback:=AUserCallback;
   FRunning:=False;
   FTerminated:=False;
   FShouldRun:=False;
@@ -517,6 +523,13 @@ begin
   end;
 end;
 
+function TAutoGPTManager.PromptUserInternal(const APrompt: string): string;
+begin
+  FUserPrompt:=APrompt;
+  Synchronize(SyncPromptUser);
+  Result:=FUserResponse;
+end;
+
 procedure TAutoGPTManager.RunOneStep;
 begin
   if not FRunning then
@@ -529,6 +542,14 @@ procedure TAutoGPTManager.StepCompletedSync;
 begin
   if Assigned(FStepCompletedEvent) then
     FStepCompletedEvent();
+end;
+
+procedure TAutoGPTManager.SyncPromptUser;
+begin
+  if Assigned(FUserPromptCallback) then
+  begin
+    FUserResponse:= FUserPromptCallback(FUserPrompt);
+  end;
 end;
 
 procedure TAutoGPTManager.Terminate;
