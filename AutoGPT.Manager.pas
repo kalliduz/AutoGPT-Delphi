@@ -2,7 +2,7 @@
 
 interface
 uses
-  Types, Classes, OpenAI, OpenAI.Chat, OpenAI.Completions, Agent, Agent.GPT, Agent.ReadFile, Agent.WriteFile, Agent.Browse, Agent.GoogleSearch,
+  Types, Classes, System.JSON, OpenAI, OpenAI.Chat, OpenAI.Completions, Agent, Agent.GPT, Agent.ReadFile, Agent.WriteFile, Agent.Browse, Agent.GoogleSearch,
   Agent.User, Agent.Memory, Agent.ListFiles, Agent.CMD, Logging;
 const
   MAIN_GPT_MODEL = 'gpt-4';
@@ -25,29 +25,29 @@ const
     '    },'+sLineBreak+
     '    "Criticism": {'+sLineBreak+
     '      "type": "string"'+sLineBreak+
-    '	  "description":"describes what you need to look out for when implementing your plan"'+sLineBreak+
+    '	     "description":"describes what you need to look out for when implementing your plan"'+sLineBreak+
     '    },'+sLineBreak+
     '    "Action": {'+sLineBreak+
     '      "type": "object",'+sLineBreak+
     '      "properties": {'+sLineBreak+
     '        "ActionType": {'+sLineBreak+
     '          "type": "string"'+sLineBreak+
-    '		  "description":"can either be THINKING, CALL_AGENT or FINISHED"'+sLineBreak+
+    '		       "description":"can either be THINKING, CALL_AGENT or FINISHED"'+sLineBreak+
     '        },'+sLineBreak+
     '        "Agent": {'+sLineBreak+
     '          "type": "string"'+sLineBreak+
-    '		  "description":"defines the agent to be used. Only use with CALL_AGENT. See documentation for available agents"'+sLineBreak+
+    '		       "description":"defines the agent to be used. Only use with CALL_AGENT. See documentation for available agents"'+sLineBreak+
     '        },'+sLineBreak+
     '        "AgentParams": {'+sLineBreak+
     '          "type": "array",'+sLineBreak+
     '          "items": ['+sLineBreak+
     '            {'+sLineBreak+
     '              "type": "string"'+sLineBreak+
-    '			  "description":"param1"'+sLineBreak+
+    '			         "description":"param1"'+sLineBreak+
     '            },'+sLineBreak+
     '            {'+sLineBreak+
     '              "type": "string"'+sLineBreak+
-    '			  "desription":"param2"'+sLineBreak+
+    '			         "desription":"param2"'+sLineBreak+
     '            }'+sLineBreak+
     '            }'+sLineBreak+
     '          ]'+sLineBreak+
@@ -68,23 +68,22 @@ const
     '    "Action"'+sLineBreak+
     '  ]'+sLineBreak+
     '}'+
-    'You can use the "THINKING"-Action to elaborate on your plan, or if you don''t have any action to execute right now.'+sLineBreak+
-    'Now we have a look at the "CALL_AGENT"-Action.'+sLineBreak+
-    '  You will use CALL_AGENT, whenever you need to execute a task, that you cannot do as a language model.'+sLineBreak+
-    'Here is a list of available agents, with their respective parameters and results:'+sLineBreak+
-    '  USER ["INPUT"]                     -- this will prompt the user for input, you will get the result'+sLineBreak+
-    '  WRITE_FILE ["filename","content"]  -- this will write a file with the given name and content'+sLineBreak+
-    '  READ_FILE ["filename"]             -- this will read the content from "filename" and return it'+sLineBreak+
-    '  BROWSE_SITE ["URL","instruction"]  -- this will read the content of a specific URL, and performs a transformation of the result based on the instruction'+sLineBreak+
-    '  SEARCH_GOOGLE ["query"]            -- this will execute the google search for the given query and returns a short summary and a link-list'+sLineBreak+
-    '  LIST_FILES []                      -- this will list the files in your workingspace and return the list as a string'+sLineBreak+
-    '  RUN_CMD  ["command"]               -- this will execute the cmd /c with the specified command and returns the standard output'+sLineBreak+
-    '  WRITE_MEMORY ["memorycontent"]     -- this will append any information into your system memory, by also decreasing your working memory size'+sLineBreak+
-    '  GPT_TASK $task$ ["instruction"]          -- this will spawn a dedicated ChatGPT-Instance, to do a task with your given instruction. no internet access'+sLineBreak+
+    'ActionType can either be "THINKING", "FINISHED" or "CALL_AGENT" '+sLineBreak+
+    'You can use the "THINKING"-ActionType to elaborate on your plan, or if you don''t have any action to execute right now.'+sLineBreak+
+    'You will use "CALL_AGENT"-ActionType, whenever you need to execute a task, that you cannot do as a language model.'+sLineBreak+
+    'When using "CALL_AGENT"-ActionType, you have to provide an "AGENT" from the list below:'+sLineBreak+
+    '   USER ["INPUT"]                     -- this will prompt the user for input, you will get the result'+sLineBreak+
+    '   WRITE_FILE ["filename","content"]  -- this will write a file with the given name and content'+sLineBreak+
+    '   READ_FILE ["filename"]             -- this will read the content from "filename" and return it'+sLineBreak+
+    '   BROWSE_SITE ["URL","instruction"]  -- this will read the content of a specific URL, and performs a transformation of the result based on the instruction'+sLineBreak+
+    '   SEARCH_GOOGLE ["query"]            -- this will execute the google search for the given query and returns a short summary and a link-list'+sLineBreak+
+    '   LIST_FILES []                      -- this will list the files in your workingspace and return the list as a string'+sLineBreak+
+    '   RUN_CMD  ["command"]               -- this will execute the cmd /c with the specified command and returns the standard output'+sLineBreak+
+    '   WRITE_MEMORY ["memorycontent"]     -- this will append any information into your system memory, by also decreasing your working memory size'+sLineBreak+
+    '   GPT_TASK ["instruction","content"] -- this will spawn a dedicated ChatGPT-Instance, to do a task with your given instruction. no internet access'+sLineBreak+
     sLineBreak+
-    'Lastly there is the "FINISHED" action'+sLineBreak+
-    'If you write "FINISHED" as an action, you will state that your ultimate goal is reached, and you don''t have anything to do'+sLineBreak+
-    'Finally here is both your system memory and your ultimate goal to reach'#13#10+
+    'You will use the "FINISHED"-ActionType, when you want to state that your ultimate goal is reached, and you don''t have anything to do'+sLineBreak+
+    'Finally here is both your system memory and your ultimate goal to reach.'#13#10+
     'SYSTEM_MEMORY:'+sLineBreak+
     '%s'+
     sLineBreak+
@@ -114,8 +113,7 @@ type
     function CreateSystemPrompt:TChatMessageBuild;
     function GetCompletion:string;
     function ExtendMemory(const AMemory:string):string;
-    function ParseResponse(const AResponse:string;out Thoughts:string; out Plan:string; out Criticism:string; out Action:TAutoGPTAction; out StructureValid:Boolean):string;
-    function ParseAction(const AActionStr:string;out Action:TAutoGPTAction; out StructureValid:Boolean):string;
+    function ParseJSONResponse(const AResponse:string;out Thoughts:string; out Plan:string; out Criticism:string; out Action:TAutoGPTAction; out StructureValid:Boolean):string;
     function GetTokenCount(const AString:string):Integer;
   public
     constructor Create( const AGoal:string;const AApiKeyOpenAI:string;
@@ -257,176 +255,141 @@ begin
   end;
 end;
 
-function TAutoGPTManagerSynced.ParseAction(const AActionStr: string;
-  out Action: TAutoGPTAction; out StructureValid: Boolean): string;
+function TAutoGPTManagerSynced.ParseJSONResponse(const AResponse:string;out Thoughts:string; out Plan:string; out Criticism:string; out Action:TAutoGPTAction; out StructureValid:Boolean): string;
 var
-  LActionType:TActionType;
+  LJSONResponse: TJSONValue;
+  LJSONAction:TJSONObject;
+  LActionType:string;
   LType:TActionType;
-  LActionPosition:Integer;
-  LPos:Integer;
-  LLastQuote:Integer;
-  LStart,LEnd:Integer;
+  LActionTypeEnum:TActionType;
+  LActionTypeFound:Boolean;
+  LAgentType:string;
+  LAgentTypeFound:Boolean;
+  LAgentTypeEnum:TAgentType;
+  LAgentName:string;
+  LJSONParams:TJSONArray;
+  LJSONParam:TJSONValue;
+  LJSONParamStr:string;
 
-  LAgentType:TAgentType;
-  LAgentPos:Integer;
 begin
-  {
-    first we try to determine the action type
-  }
-  LActionType:=atThinking;
-  LActionPosition:=0;
-  for LType := Low(TActionType) to High(TActionType) do
-  begin
-    LPos:= Pos(ACTION_NAMES[LType],AActionStr);
-    if LPos > 0 then
-    begin
-      LActionPosition:= LPos;
-      LActionType:= LType;
-      Break;
-    end;
-  end;
-  if LActionPosition > 0 then
-    Action.ActionType:=LActionType
-  else
-  begin
-    StructureValid:=False;
-    Result:= 'Invalid action or nonexistent action specified';
-    Exit;
-  end;
-
-  case LActionType of
-    atThinking: StructureValid:= True;
-    atCallAgent:
-    begin
-      {
-        first we need to find out the agent-type
-      }
-      LAgentPos:=MaxInt;
-
-      for LAgentType := Low(TAgentType) to High(TAgentType) do
-      begin
-        LPos:=Pos(AGENT_NAMES[LAgentType],AActionStr,LActionPosition+1);
-        {
-          we search for the earliest occurence of an agent name
-        }
-        if (LPos > 0) AND (LPos < LAgentPos) then
-        begin
-          Action.AgentType:=LAgentType;
-          LAgentPos:=LPos;
-        end;
-      end;
-      if LAgentPos = MaxInt then
-      begin
-        StructureValid:= False;
-        Result:='The agent type your requested doesn''t exist';
-        Exit;
-      end;
-
-      {
-        now we need to determine all following params and their contents
-      }
-      setlength(Action.AgentParams,0);
-      LLastQuote:=LAgentPos+1;
-      while True do
-      begin
-        LStart:=Pos('$',AActionStr,LLastQuote);
-        if LStart > 0 then
-        begin
-          LEnd:= Pos('$', AActionStr, LStart+1);
-          if LEnd > 0 then
-          begin
-            {
-              we got our text, now we have to copy it into the next param, and continue
-            }
-            setlength(Action.AgentParams,length(Action.AgentParams)+1);
-            Action.AgentParams[length(Action.AgentParams)-1]:=Copy(AActionStr,LStart+1,LEnd-LStart-1);
-            LLastQuote:=LEnd+1;
-          end
-          else
-            break;
-        end
-        else
-          break;
-      end;
-      {
-        now we got our param data, we just need to verify the number of params
-      }
-      if length(Action.AgentParams) <> AGENT_PARAM_COUNT[Action.AgentType] then
-      begin
-        Result:='expected number of parameters for agent '+AGENT_NAMES[Action.AgentType]+' is '+inttostr(AGENT_PARAM_COUNT[Action.AgentType])+', but got '+inttostr(length(Action.AgentParams))+' instead.';
-        StructureValid:=False;
-        Exit;
-      end;
-      {
-        we're done parsing the call_agent action
-      }
-      StructureValid:= True;
-    end;
-    atFinished: StructureValid:= True;
-  end;
-
-end;
-
-function TAutoGPTManagerSynced.ParseResponse(const AResponse:string;out Thoughts:string; out Plan:string;
-out Criticism:string; out Action:TAutoGPTAction; out StructureValid:Boolean):string;
-const
-  conResponseKeywords: array[TResponseStructureType] of string = ('INTERNAL_THOUGHTS', 'PLAN', 'CRITICISM', 'ACTION');
-var
-  LPositions:array [TResponseStructureType] of Integer;
-  LType:TResponseStructureType;
-  LData:array[TResponseStructureType] of string;
-  LCopyStart,LCopyEnd:Integer;
-begin
-  {
-    let's get the positions of our keywords
-  }
-  for LType := Low(TResponseStructureType) to High(TResponseStructureType) do
-  begin
-    LPositions[LType]:=Pos(conResponseKeywords[LType],AResponse);
-    if LPositions[LType] = 0 then
-    begin
-      Result:= 'Invalid response. Keyword '+conResponseKeywords[LType]+' not found!';
-      StructureValid:=False;
-      Exit;
-    end;
-    if (LType <> TResponseStructureType(0)) AND (LPositions[LType] < LPositions[TResponseStructureType(Ord(LType)-1)]) then
-    begin
-      {
-        the responses shouldn't be in the wrong order
-      }
-      Result:='Invalid response. Keywords are in the wrong order';
-      StructureValid:=False;
-      Exit;
-    end;
-  end;
-  {
-    now that everything is fine structurally, let's parse the actual data
-  }
-  for LType := Low(TResponseStructureType) to High(TResponseStructureType) do
-  begin
+    LJSONResponse := TJSONObject.ParseJSONValue(AResponse);
     {
-      every data is just the text between two keywords
-      except for the last keyword
+      parse the response
     }
-    LCopyStart:= LPositions[LType]+length(conResponseKeywords[LType]);
-    if LType = High(TResponseStructureType) then
-      LCopyEnd:= length(AResponse)
-    else
-      LCopyEnd:= LPositions[TResponseStructureType(Ord(LType)+1)];
+    if not (LJSONResponse is TJSONObject) then
+    begin
+      StructureValid:=False;
+      Result:='Error: This response is not valie JSON object.';
+      Exit;
+    end;
+    if not LJSONResponse.TryGetValue<string>('InternalThoughts',Thoughts) then
+    begin
+      StructureValid:=False;
+      Result:='Error: JSON response does not contain "InternalThoughts".';
+      Exit;
+    end;
+    if not LJSONResponse.TryGetValue<string>('Plan',Plan) then
+    begin
+      StructureValid:=False;
+      Result:='Error: JSON response does not contain "Plan".';
+      Exit;
+    end;
+    if not LJSONResponse.TryGetValue<string>('Criticism',Criticism) then
+    begin
+      StructureValid:=False;
+      Result:='Error: JSON response does not contain "Criticism".';
+      Exit;
+    end;
+    if not LJSONResponse.TryGetValue<TJSONObject>('Action',LJSONAction) then
+    begin
+      StructureValid:=False;
+      Result:='Error: JSON repsonse does not contain an Action".';
+      Exit;
+    end;
+    {
+      parse the action type
+    }
+    if not LJSONAction.TryGetValue<string>('ActionType',LActionType) then
+    begin
+      StructureValid:=False;
+      Result:='Error: Action does not contain an ActionType.';
+      Exit;
+    end;
+    LActionTypeFound:=False;
+    for LType := Low(TActionType) to High(TActionType) do
+    begin
+      if LowerCase(ACTION_NAMES[LType]) = LowerCase(LActionType) then
+      begin
+        LActionTypeEnum:= LType;
+        LActionTypeFound:=True;
+        break;
+      end;
+    end;
+    if not LActionTypeFound then
+    begin
+      StructureValid:= False;
+      Result:='Error: "'+LActionType+'" is not a valid ActionType.';
+      Exit;
+    end;
+    Action.ActionType:=LActionTypeEnum;
+    case LActionTypeEnum of
+      atThinking:
+        StructureValid:= True;
+      atFinished:
+        StructureValid:= True;
+      atCallAgent:
+        begin
+          {
+            parse the agent type
+          }
+          if not LJSONAction.TryGetValue<string>('Agent',LAgentType) then
+          begin
+            StructureValid:= False;
+            Result:='Error: You have to provide an agent when using CALL_AGENT';
+            Exit;
+          end;
+          LAgentTypeFound:=False;
+          for LAgentTypeEnum := Low(TAgentType) to High(TAgentType) do
+          begin
+            if LowerCase(AGENT_NAMES[LAgentTypeEnum]) = LowerCase(LAgentType) then
+            begin
+              Action.AgentType:= LAgentTypeEnum;
+              LAgentTypeFound:=True;
+              Break;
+            end;
+          end;
+          if not LAgentTypeFound then
+          begin
+            StructureValid:=False;
+            Result:='Error: "'+LAgentType+'" is not a valid Agent.';
+            Exit;
+          end;
 
-    LData[LType]:=Copy(AResponse,LCopyStart, LCopyEnd-LCopyStart+1);
-  end;
-  {
-    now we assign the pure string data
-  }
-  Thoughts:=LData[rstInternalThoughts];
-  Plan:= LData[rstPlan];
-  Criticism:= LData[rstCriticism];
-  {
-    finally we parse our action data
-  }
-  Result:= ParseAction(LData[rstAction],Action,StructureValid);
+          if not LJSONAction.TryGetValue<TJSONArray>('AgentParams',LJSONParams) then
+          begin
+            StructureValid:=False;
+            Result:='Error: you have to provide the "AgentParams" type when using an agent.';
+            Exit;
+          end;
+
+          if LJSONParams.Count <> AGENT_PARAM_COUNT[LAgentTypeEnum] then
+          begin
+            StructureValid:= False;
+            Result:='Error: "'+LAgentType+'" expects '+inttostr(AGENT_PARAM_COUNT[LAgentTypeEnum])+' params, but got '+inttostr(LJSONParams.Count)+' instead.';
+            Exit;
+          end;
+
+          for LJSONParam in LJSONParams do
+          begin
+            LJSONParam.TryGetValue<string>(LJSONParamStr);
+            Insert(LJSONParamStr,Action.AgentParams,length(Action.AgentParams));
+          end;
+
+          StructureValid:=True;
+        end;
+    end;
 end;
+
 
 procedure TAutoGPTManagerSynced.RunOneStep;
 var
@@ -454,7 +417,7 @@ begin
   {
     now we try to understand what the model wants
   }
-  LError:= ParseResponse(LModelResponse,LThoughts,LPlan,LCritic,LAction,LValid);
+  LError:= ParseJSONResponse(LModelResponse,LThoughts,LPlan,LCritic,LAction,LValid);
 
   if not LValid then
   begin
