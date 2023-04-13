@@ -1,6 +1,9 @@
 # AutoGPT-Delphi
 This is an experiment to create a fully autonomous GPT-instance to solve arbitrary Tasks. Its functionality is similar to Auto-GPT(https://github.com/Torantulino/Auto-GPT) or BabyAGI(https://github.com/yoheinakajima/babyagi).
 
+💵AutoGPT-Delphi uses GPT-4 by default, and will utilize GPT3.5-turbo for summarizations, so watch your costs in OpenAI. You can set the main agent to be 3.5 as well,
+but at the current point, the consistency is not really what you'd want💵
+
 ⚠ Since the program can potentially execute harmful operations, it's recommended to run it inside a VM ⚠
 
 ## Requirements ✓
@@ -18,9 +21,6 @@ This is an experiment to create a fully autonomous GPT-instance to solve arbitra
   - GPT_TASK      - spawns a ChatGPT subinstance to execute a specific task
   - LIST_FILES    - returns the list of all files in the workspace
   - RUN_CMD       - executes an arbitrary command with cmd /c
-
-AutoGPT-Delphi uses GPT-4 by default, and will utilize GPT3.5-turbo for summarizations, so watch your costs in OpenAI. You can set the main agent to be 3.5 as well,
-but at the current point, the consistency is not really what you'd want.
 ## Plans for the future 🔮
   - Improve the system prompt to make even GPT 3.5 understand it
   - rewrite the agent syntax to be easier parseable
