@@ -1,4 +1,4 @@
-﻿unit AutoGPT.Manager;
+unit AutoGPT.Manager;
 
 interface
 uses
@@ -32,7 +32,7 @@ const
     '      "properties": {'+sLineBreak+
     '        "ActionCategory": {'+sLineBreak+
     '          "type": "string"'+sLineBreak+
-    '		       "description":"can either be THINKING, CALL_AGENT or FINISHED. Can NOT be an AGENT"'+sLineBreak+
+    '		       "description":"can either be "THINKING", "CALL_AGENT" or "FINISHED"."'+sLineBreak+
     '        },'+sLineBreak+
     '        "Agent": {'+sLineBreak+
     '          "type": "string"'+sLineBreak+
@@ -70,8 +70,8 @@ const
     '}'+
     'ActionCategory can either be "THINKING", "FINISHED" or "CALL_AGENT" '+sLineBreak+
     'Make sure that you don''t use an Agent as the ActionCategory!'+sLineBreak+
-    'You can use the "THINKING"-ActionCategory to elaborate on your plan, or if you don''t have any action to execute right now.'+sLineBreak+
-    'You will use "CALL_AGENT"-ActionCategory, whenever you need to execute a task, that you cannot do as a language model.'+sLineBreak+
+    'You can use the "THINKING" to elaborate on your plan, or if you don''t have any action to execute right now.'+sLineBreak+
+    'You will use "CALL_AGENT", whenever you need to execute a task, that you cannot do as a language model.'+sLineBreak+
     'You have to provide an "AGENT" from the list below:'+sLineBreak+
     '   USER ["INPUT"]                     -- this will prompt the user for input, you will get the result'+sLineBreak+
     '   WRITE_FILE ["filename","content"]  -- this will write a file with the given name and content'+sLineBreak+
@@ -81,9 +81,9 @@ const
     '   LIST_FILES []                      -- this will list the files in your workingspace and return the list as a string'+sLineBreak+
     '   RUN_CMD  ["command"]               -- this will execute the cmd /c with the specified command and returns the standard output'+sLineBreak+
     '   WRITE_MEMORY ["memorycontent"]     -- this will append any information into your system memory, by also decreasing your working memory size'+sLineBreak+
-    '   GPT_TASK ["instruction","content"] -- this will spawn a dedicated ChatGPT-Instance, to do a task with your given instruction. no internet access'+sLineBreak+
+    '   GPT_AGENT ["instruction","content"]-- this will spawn a dedicated ChatGPT-Instance, to do a task with your given instruction. This instance won''t have any context'+sLineBreak+
     sLineBreak+
-    'You will use the "FINISHED"-ActionCategory, when you want to state that your ultimate goal is reached, and you don''t have anything to do'+sLineBreak+
+    'You will use "FINISHED", when you want to state that your ultimate goal is reached, and you don''t have anything to do'+sLineBreak+
     'Finally here is both your system memory and your ultimate goal to reach.'#13#10+
     'SYSTEM_MEMORY:'+sLineBreak+
     '%s'+
@@ -171,7 +171,7 @@ type
   end;
   const
     AGENT_PARAM_COUNT: array[TAgentType] of Integer = (1,2,1,2,1,1,2,0,1);
-    AGENT_NAMES:array[TAgentType] of string = ('USER','WRITE_FILE','READ_FILE','BROWSE_SITE','SEARCH_GOOGLE','WRITE_MEMORY','GPT_TASK','LIST_FILES','RUN_CMD');
+    AGENT_NAMES:array[TAgentType] of string = ('USER','WRITE_FILE','READ_FILE','BROWSE_SITE','SEARCH_GOOGLE','WRITE_MEMORY','GPT_AGENT','LIST_FILES','RUN_CMD');
     ACTION_NAMES : array[TActionCategory] of string = ('THINKING','CALL_AGENT','FINISHED');
 
 implementation
@@ -269,14 +269,8 @@ var
   i: Integer;
 begin
   Result:='';
-  Result:= Result+'Goal: '+FGoal+#13#10;
-  Result:= Result+'Memory: '+FLongTermMemory+#13#10;
-  Result:= Result+'--------------------'#13#10;
-  for i := 1 to length(FMemory)-1 do
-  begin
-    Result:=Result+StringReplace(FMemory[i].Content,#10,#13#10,[rfReplaceAll])+#13#10;
-    Result:=Result+'--------------------'#13#10;
-  end;
+  Result:= Result+'Goal: '+FGoal+sLineBreak;
+  Result:= Result+'Memory: '+FLongTermMemory+sLineBreak;
 end;
 
 function TAutoGPTManagerSynced.ParseJSONResponse(const AResponse:string;out Thoughts:string; out Plan:string; out Criticism:string; out Action:TAutoGPTAction; out StructureValid:Boolean): string;
@@ -303,7 +297,7 @@ begin
     if not (LJSONResponse is TJSONObject) then
     begin
       StructureValid:=False;
-      Result:='Error: This response is not valie JSON object.';
+      Result:='Error: This response is not valid JSON object.';
       Exit;
     end;
     if not LJSONResponse.TryGetValue<string>('InternalThoughts',Thoughts) then
@@ -442,6 +436,7 @@ begin
     now we try to understand what the model wants
   }
   LError:= ParseJSONResponse(LModelResponse,LThoughts,LPlan,LCritic,LAction,LValid);
+  FLastStep.ActionResponse:='';
   FLastStep.Thoughts:=LThoughts;
   FLastStep.Plan:=LPlan;
   FLastStep.Criticism:=LCritic;

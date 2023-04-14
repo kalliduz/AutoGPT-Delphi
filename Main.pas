@@ -19,9 +19,7 @@ type
     imgAutoGPT: TImage;
     pnlResults: TPanel;
     CategoryPanelGroup1: TCategoryPanelGroup;
-    CategoryPanel1: TCategoryPanel;
-    CategoryPanel2: TCategoryPanel;
-    CategoryPanel3: TCategoryPanel;
+    lblMemory: TLabel;
     procedure btnCreateTaskClick(Sender: TObject);
     procedure btnRunClick(Sender: TObject);
     procedure chkContinuousClick(Sender: TObject);
@@ -107,8 +105,7 @@ begin
   LCatPanFull.Caption:='Full output';
   LLabFull.Text:= AData.FullOutput+sLineBreak+AData.ErrorMessage+sLineBreak+AData.ActionResponse;
   LCatPanFull.Collapse;
-
-
+  LCatPanMaster.Collapse;
 end;
 
 procedure TfrmAutoGPTGUI.btnCreateTaskClick(Sender: TObject);
@@ -126,6 +123,7 @@ begin
 
   ForceDirectories(FOptions.WorkingDir);
   FAutoGpt:= TAutoGPTManager.Create(edtGoal.Text,FOptions.OpenAIApiKey,FOptions.WorkingDir,FOptions.GoogleCustomSearchApiKey,FOptions.GoogleSearchEngineID,UserCallback,OnStepCompleted);
+  lblMemory.Caption:=FAutoGpt.Memory;
 end;
 
 procedure TfrmAutoGPTGUI.btnRunClick(Sender: TObject);
@@ -171,6 +169,7 @@ begin
   actIndicatorRunning.Animate:=False;
   btnCreateTask.Enabled:=True;
   btnRun.Enabled:=True;
+  lblMemory.Caption:=FAutoGpt.Memory;
   if chkContinuous.Checked AND (spinContinousRuns.Value>0) then
   begin
     Run;

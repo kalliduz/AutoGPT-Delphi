@@ -7359,10 +7359,23 @@ object frmAutoGPTGUI: TfrmAutoGPTGUI
         B5D4524B2D6D01FAFF019F7CA77788E901880000000049454E44AE426082}
       Stretch = True
     end
+    object lblMemory: TLabel
+      Left = 178
+      Top = 5
+      Width = 586
+      Height = 83
+      AutoSize = False
+      Font.Charset = ANSI_CHARSET
+      Font.Color = clWindowText
+      Font.Height = -16
+      Font.Name = 'Verdana'
+      Font.Style = []
+      ParentFont = False
+    end
     object edtGoal: TEdit
       Left = 178
       Top = 94
-      Width = 687
+      Width = 586
       Height = 37
       AutoSize = False
       Font.Charset = ANSI_CHARSET
@@ -7436,8 +7449,8 @@ object frmAutoGPTGUI: TfrmAutoGPTGUI
       Value = 0
     end
     object actIndicatorRunning: TActivityIndicator
-      Left = 178
-      Top = 24
+      Left = 770
+      Top = 94
       IndicatorColor = aicWhite
       IndicatorSize = aisXLarge
       IndicatorType = aitSectorRing
@@ -7474,21 +7487,6 @@ object frmAutoGPTGUI: TfrmAutoGPTGUI
       TabOrder = 0
       ExplicitLeft = 0
       ExplicitTop = 0
-      object CategoryPanel3: TCategoryPanel
-        Top = 400
-        Caption = 'CategoryPanel3'
-        TabOrder = 0
-      end
-      object CategoryPanel2: TCategoryPanel
-        Top = 200
-        Caption = 'CategoryPanel2'
-        TabOrder = 1
-      end
-      object CategoryPanel1: TCategoryPanel
-        Top = 0
-        Caption = 'CategoryPanel1'
-        TabOrder = 2
-      end
     end
   end
 end
