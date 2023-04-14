@@ -3,7 +3,7 @@ object frmAutoGPTGUI: TfrmAutoGPTGUI
   Top = 0
   Caption = 'AutoGPT-Delphi 0.1-alpha'
   ClientHeight = 953
-  ClientWidth = 890
+  ClientWidth = 889
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -12,13 +12,14 @@ object frmAutoGPTGUI: TfrmAutoGPTGUI
   Font.Style = []
   OldCreateOrder = False
   OnCreate = FormCreate
+  OnDestroy = FormDestroy
   PixelsPerInch = 96
   TextHeight = 13
   object pnlControls: TPanel
     AlignWithMargins = True
     Left = 3
     Top = 3
-    Width = 884
+    Width = 883
     Height = 182
     Align = alTop
     TabOrder = 0
@@ -7446,7 +7447,7 @@ object frmAutoGPTGUI: TfrmAutoGPTGUI
     AlignWithMargins = True
     Left = 3
     Top = 191
-    Width = 884
+    Width = 883
     Height = 759
     Align = alClient
     TabOrder = 1
@@ -7455,7 +7456,7 @@ object frmAutoGPTGUI: TfrmAutoGPTGUI
     object CategoryPanelGroup1: TCategoryPanelGroup
       Left = 1
       Top = 1
-      Width = 882
+      Width = 881
       Height = 757
       VertScrollBar.Tracking = True
       Align = alClient
@@ -7473,7 +7474,21 @@ object frmAutoGPTGUI: TfrmAutoGPTGUI
       TabOrder = 0
       ExplicitLeft = 0
       ExplicitTop = 0
-      ExplicitWidth = 1040
+      object CategoryPanel3: TCategoryPanel
+        Top = 400
+        Caption = 'CategoryPanel3'
+        TabOrder = 0
+      end
+      object CategoryPanel2: TCategoryPanel
+        Top = 200
+        Caption = 'CategoryPanel2'
+        TabOrder = 1
+      end
+      object CategoryPanel1: TCategoryPanel
+        Top = 0
+        Caption = 'CategoryPanel1'
+        TabOrder = 2
+      end
     end
   end
 end

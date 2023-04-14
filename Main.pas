@@ -19,10 +19,14 @@ type
     imgAutoGPT: TImage;
     pnlResults: TPanel;
     CategoryPanelGroup1: TCategoryPanelGroup;
+    CategoryPanel1: TCategoryPanel;
+    CategoryPanel2: TCategoryPanel;
+    CategoryPanel3: TCategoryPanel;
     procedure btnCreateTaskClick(Sender: TObject);
     procedure btnRunClick(Sender: TObject);
     procedure chkContinuousClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
+    procedure FormDestroy(Sender: TObject);
   private
     FOptions:TAutoGPTOptions;
     FAutoGpt:TAutoGPTManager;
@@ -43,45 +47,83 @@ implementation
 
 procedure TfrmAutoGPTGUI.AddStep(const AData:TStepData);
 var
+  LCatPanMaster:TCategoryPanel;
   LCatPan:TCategoryPanel;
-  LLab:TLabel;
+  LCatPanGroupMaster:TCategoryPanelGroup;
+  LCatPanFull:TCategoryPanel;
+  LLab:TMemo;
+  LLabFull:TMemo;
 begin
-  LCatPan:=TCategoryPanel(CategoryPanelGroup1.CreatePanel(CategoryPanelGroup1));
+  LCatPanMaster:=TCategoryPanel(CategoryPanelGroup1.CreatePanel(CategoryPanelGroup1));
+  LCatPanMaster.Height:= 600;
+  LCatPanGroupMaster:=TCategoryPanelGroup.Create(LCatPanMaster);
+  LCatPanGroupMaster.Parent:=LCatPanMaster;
+  LCatPanGroupMaster.Align:=alClient;
+
+  LCatPan:=TCategoryPanel(LCatPanGroupMaster.CreatePanel(LCatPanGroupMaster));
   LCatPan.Font.Size:=12;
   LCatPan.Font.Name:='Verdana';
-  LLab:=TLabel.Create(LCatPan);
+
+
+  LLab:=TMemo.Create(LCatPan);
+  LLab.ReadOnly:=True;
+  LLab.ScrollBars:=TScrollStyle.ssVertical;
   LLab.Parent:=LCatPan;
   LLab.Align:=alClient;
   LLab.WordWrap:=True;
+
+
 
   if AData.Success then
   begin
     LCatPan.Color:=clLime;
 
     if AData.Action = atCallAgent then
-      LCatPan.Caption:=ACTION_NAMES[AData.Action]+' '+AGENT_NAMES[AData.Agent] + ' "'+AData.Params+'"'
+      LCatPanMaster.Caption:=ACTION_NAMES[AData.Action]+' '+AGENT_NAMES[AData.Agent] + ' "'+AData.Params+'"'
     else
-      LCatPan.Caption:=ACTION_NAMES[AData.Action];
-    LLab.Caption:=AData.Thoughts+sLineBreak+sLineBreak+AData.Plan+sLineBreak+sLineBreak+AData.Criticism;
+      LCatPanMaster.Caption:=ACTION_NAMES[AData.Action];
+    LLab.Text:=AData.Thoughts+sLineBreak+sLineBreak+AData.Plan+sLineBreak+sLineBreak+AData.Criticism;
 
   end
   else
   begin
-    LCatPan.Color:=clRed;
-    LCatPan.Caption:='Invalid command';
-    LLab.Caption:=AData.ErrorMessage;
+    LCatPanMaster.Color:=clRed;
+    LCatPanMaster.Caption:='Invalid command';
+    LLab.Text:=AData.ErrorMessage;
   end;
-
-
-
+  LCatPan.Caption:='Model thoughts';
+  {
+    Full output panel
+  }
+  LCatPanFull:=TCategoryPanel(LCatPanGroupMaster.CreatePanel(LCatPanGroupMaster));
+  LCatPanFull.Font.Size:=12;
+  LCatPanFull.Font.Name:='Verdana';
+  LLabFull:=TMemo.Create(LCatPanFull);
+  LLabFull.ScrollBars:=TScrollStyle.ssVertical;
+  LLabFull.ReadOnly:=True;
+  LLabFull.Parent:=LCatPanFull;
+  LLabFull.Align:=alClient;
+  LLabFull.WordWrap:=True;
+  LCatPanFull.Caption:='Full output';
+  LLabFull.Text:= AData.FullOutput+sLineBreak+AData.ErrorMessage+sLineBreak+AData.ActionResponse;
+  LCatPanFull.Collapse;
 
 
 end;
 
 procedure TfrmAutoGPTGUI.btnCreateTaskClick(Sender: TObject);
+var
+  LPanel:TCategoryPanel;
+  I:Integer;
 begin
   if Assigned(FAutoGpt) then
     FAutoGpt.Free;
+  for i := CategoryPanelGroup1.Panels.Count-1  downto 0 do
+  begin
+    TObject(CategoryPanelGroup1.Panels.Items[i]).Free;
+  end;
+  CategoryPanelGroup1.Panels.Clear;
+
   ForceDirectories(FOptions.WorkingDir);
   FAutoGpt:= TAutoGPTManager.Create(edtGoal.Text,FOptions.OpenAIApiKey,FOptions.WorkingDir,FOptions.GoogleCustomSearchApiKey,FOptions.GoogleSearchEngineID,UserCallback,OnStepCompleted);
 end;
@@ -114,6 +156,12 @@ begin
   begin
     FOptions.LoadFromIni(LIniFileName);
   end;
+end;
+
+procedure TfrmAutoGPTGUI.FormDestroy(Sender: TObject);
+begin
+  if Assigned(FAutoGpt) then
+    FAutoGpt.Free;
 end;
 
 procedure TfrmAutoGPTGUI.OnStepCompleted;
