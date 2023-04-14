@@ -54,6 +54,8 @@ var
 begin
   LCatPanMaster:=TCategoryPanel(CategoryPanelGroup1.CreatePanel(CategoryPanelGroup1));
   LCatPanMaster.Height:= 600;
+  LCatPanMaster.Font.Size:=14;
+  LCatPanMaster.Font.Name:='Verdana';
   LCatPanGroupMaster:=TCategoryPanelGroup.Create(LCatPanMaster);
   LCatPanGroupMaster.Parent:=LCatPanMaster;
   LCatPanGroupMaster.Align:=alClient;

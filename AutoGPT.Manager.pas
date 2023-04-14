@@ -1,4 +1,4 @@
-unit AutoGPT.Manager;
+﻿unit AutoGPT.Manager;
 
 interface
 uses
@@ -71,17 +71,17 @@ const
     'ActionCategory can either be "THINKING", "FINISHED" or "CALL_AGENT" '+sLineBreak+
     'Make sure that you don''t use an Agent as the ActionCategory!'+sLineBreak+
     'You can use the "THINKING" to elaborate on your plan, or if you don''t have any action to execute right now.'+sLineBreak+
-    'You will use "CALL_AGENT", whenever you need to execute a task, that you cannot do as a language model.'+sLineBreak+
+    'You will use "CALL_AGENT" as ActionCategory, whenever you need to run an AGENT.'+sLineBreak+
     'You have to provide an "AGENT" from the list below:'+sLineBreak+
-    '   USER ["INPUT"]                     -- this will prompt the user for input, you will get the result'+sLineBreak+
-    '   WRITE_FILE ["filename","content"]  -- this will write a file with the given name and content'+sLineBreak+
-    '   READ_FILE ["filename"]             -- this will read the content from "filename" and return it'+sLineBreak+
-    '   BROWSE_SITE ["URL","instruction"]  -- this will read the content of a specific URL, and performs a transformation of the result based on the instruction'+sLineBreak+
-    '   SEARCH_GOOGLE ["query"]            -- this will execute the google search for the given query and returns a short summary and a link-list'+sLineBreak+
-    '   LIST_FILES []                      -- this will list the files in your workingspace and return the list as a string'+sLineBreak+
-    '   RUN_CMD  ["command"]               -- this will execute the cmd /c with the specified command and returns the standard output'+sLineBreak+
-    '   WRITE_MEMORY ["memorycontent"]     -- this will append any information into your system memory, by also decreasing your working memory size'+sLineBreak+
-    '   GPT_AGENT ["instruction","content"]-- this will spawn a dedicated ChatGPT-Instance, to do a task with your given instruction. This instance won''t have any context'+sLineBreak+
+    '   ActionCategory:CALL_AGENT, AGENT:USER ["INPUT"]                     -- this will prompt the user for input, you will get the result'+sLineBreak+
+    '   ActionCategory:CALL_AGENT, AGENT:WRITE_FILE ["filename","content"]  -- this will write a file with the given name and content'+sLineBreak+
+    '   ActionCategory:CALL_AGENT, AGENT:READ_FILE ["filename"]             -- this will read the content from "filename" and return it'+sLineBreak+
+    '   ActionCategory:CALL_AGENT, AGENT:BROWSE_SITE ["URL","instruction"]  -- this will read the content of a specific URL, and performs a transformation of the result based on the instruction'+sLineBreak+
+    '   ActionCategory:CALL_AGENT, AGENT:SEARCH_GOOGLE ["query"]            -- this will execute the google search for the given query and returns a short summary and a link-list'+sLineBreak+
+    '   ActionCategory:CALL_AGENT, AGENT:LIST_FILES []                      -- this will list the files in your workingspace and return the list as a string'+sLineBreak+
+    '   ActionCategory:CALL_AGENT, AGENT:RUN_CMD  ["command"]               -- this will execute the cmd /c with the specified command and returns the standard output'+sLineBreak+
+    '   ActionCategory:CALL_AGENT, AGENT:WRITE_MEMORY ["memorycontent"]     -- this will append any information into your system memory, by also decreasing your working memory size'+sLineBreak+
+    '   ActionCategory:CALL_AGENT, AGENT:GPT_AGENT ["instruction","content"]-- this will spawn a dedicated ChatGPT-Instance, to do a task with your given instruction. This instance won''t have any context'+sLineBreak+
     sLineBreak+
     'You will use "FINISHED", when you want to state that your ultimate goal is reached, and you don''t have anything to do'+sLineBreak+
     'Finally here is both your system memory and your ultimate goal to reach.'#13#10+
@@ -539,8 +539,8 @@ begin
          //TODO: forward exception as status
         end;
       finally
-        Synchronize(StepCompletedSync);
         FRunning:=False;
+        Synchronize(StepCompletedSync);
       end;
     end
     else
