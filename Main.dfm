@@ -1,9 +1,9 @@
 object frmAutoGPTGUI: TfrmAutoGPTGUI
   Left = 0
   Top = 0
-  Caption = 'AutoGPT-Delphi 0.1'
+  Caption = 'AutoGPT-Delphi 0.1-alpha'
   ClientHeight = 953
-  ClientWidth = 1525
+  ClientWidth = 889
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -12,32 +12,19 @@ object frmAutoGPTGUI: TfrmAutoGPTGUI
   Font.Style = []
   OldCreateOrder = False
   OnCreate = FormCreate
+  OnDestroy = FormDestroy
   PixelsPerInch = 96
   TextHeight = 13
-  object mmoResults: TMemo
-    AlignWithMargins = True
-    Left = 3
-    Top = 191
-    Width = 1519
-    Height = 759
-    Align = alClient
-    Font.Charset = ANSI_CHARSET
-    Font.Color = clWindowText
-    Font.Height = -16
-    Font.Name = 'Verdana'
-    Font.Style = []
-    ParentFont = False
-    ScrollBars = ssVertical
-    TabOrder = 0
-  end
   object pnlControls: TPanel
     AlignWithMargins = True
     Left = 3
     Top = 3
-    Width = 1519
+    Width = 883
     Height = 182
     Align = alTop
-    TabOrder = 1
+    TabOrder = 0
+    ExplicitLeft = -2
+    ExplicitWidth = 1519
     object imgAutoGPT: TImage
       Left = 8
       Top = 5
@@ -7372,10 +7359,23 @@ object frmAutoGPTGUI: TfrmAutoGPTGUI
         B5D4524B2D6D01FAFF019F7CA77788E901880000000049454E44AE426082}
       Stretch = True
     end
+    object lblMemory: TLabel
+      Left = 178
+      Top = 5
+      Width = 586
+      Height = 83
+      AutoSize = False
+      Font.Charset = ANSI_CHARSET
+      Font.Color = clWindowText
+      Font.Height = -16
+      Font.Name = 'Verdana'
+      Font.Style = []
+      ParentFont = False
+    end
     object edtGoal: TEdit
       Left = 178
       Top = 94
-      Width = 921
+      Width = 586
       Height = 37
       AutoSize = False
       Font.Charset = ANSI_CHARSET
@@ -7449,11 +7449,44 @@ object frmAutoGPTGUI: TfrmAutoGPTGUI
       Value = 0
     end
     object actIndicatorRunning: TActivityIndicator
-      Left = 1105
+      Left = 770
       Top = 94
       IndicatorColor = aicWhite
       IndicatorSize = aisXLarge
       IndicatorType = aitSectorRing
+    end
+  end
+  object pnlResults: TPanel
+    AlignWithMargins = True
+    Left = 3
+    Top = 191
+    Width = 883
+    Height = 759
+    Align = alClient
+    TabOrder = 1
+    ExplicitLeft = -2
+    ExplicitWidth = 1519
+    object CategoryPanelGroup1: TCategoryPanelGroup
+      Left = 1
+      Top = 1
+      Width = 881
+      Height = 757
+      VertScrollBar.Tracking = True
+      Align = alClient
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = clWindowText
+      Font.Height = -16
+      Font.Name = 'Tahoma'
+      Font.Style = []
+      HeaderFont.Charset = DEFAULT_CHARSET
+      HeaderFont.Color = clWindowText
+      HeaderFont.Height = -11
+      HeaderFont.Name = 'Tahoma'
+      HeaderFont.Style = []
+      ParentFont = False
+      TabOrder = 0
+      ExplicitLeft = 0
+      ExplicitTop = 0
     end
   end
 end
