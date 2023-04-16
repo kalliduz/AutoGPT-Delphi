@@ -11,6 +11,7 @@ type
     FApiKeyOpenAI:string;
     FApiKeyGoogle:string;
     FSearchEngineID:string;
+    function SummarizeEverything(const AText:string):string;
   protected
       function CallAgentInternal(AParams:TAgentParams):string; override;
   public
@@ -69,21 +70,15 @@ begin
 end;
 
 function TAgentGoogleSearch.CallAgentInternal(AParams: TAgentParams): string;
-var
-  LSumAgent:TAgentGPT35;
+
 begin
   inherited;
   Result:=GoogleSearch( AParams[0], FApiKeyGoogle,FSearchEngineID);
   LogDebugMessage('Raw response: '+Result);
   {
-    we got our content, now we execute the specified instruction with GPT-3
+    we got our content, now we summarize it
   }
-  LSumAgent:=TAgentGPT35.Create(FApiKeyOpenAI);
-  try
-    Result:=  LSumAgent.CallAgent(['Summarize the relevant info and provide a linklist:'#13#10,Copy(Result,0,8000)]);
-  finally
-    LSumAgent.Free;
-  end;
+  Result:= SummarizeEverything(Result);
 end;
 
 constructor TAgentGoogleSearch.Create(const AOpenAIApiKey:string;const AGoogleAPIKey:string;const ASearchEngineID:string);
@@ -93,6 +88,28 @@ begin
   FApiKeyOpenAI:=AOpenAIApiKey;
   FSearchEngineID:=ASearchEngineID;
 
+end;
+
+function TAgentGoogleSearch.SummarizeEverything(const AText: string): string;
+var
+  LSumAgent:TAgentGPT35;
+  LStartIndex:Integer;
+  LSumIdx:Integer;
+begin
+  Result:='';
+  LSumIdx:=0;
+  LStartIndex:=0;
+  while LStartIndex < length(AText) do
+  begin
+    inc(LSumIdx);
+    LSumAgent:=TAgentGPT35.Create(FApiKeyOpenAI);
+    try
+      Result:=Result+'SummaryPart'+inttostr(LSumIdx)+': '+sLineBreak + LSumAgent.CallAgent(['Summarize relevant info and list all links from the content:'#13#10,Copy(AText,LStartIndex,LStartIndex+8000)])+sLineBreak;
+    finally
+      LSumAgent.Free;
+    end;
+    LStartIndex:=LStartIndex+8000;
+  end;
 end;
 
 end.
