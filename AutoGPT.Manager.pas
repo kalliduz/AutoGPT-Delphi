@@ -1,12 +1,14 @@
-unit AutoGPT.Manager;
+﻿unit AutoGPT.Manager;
 
 interface
 uses
   Types, Classes, System.JSON, OpenAI, OpenAI.Chat, OpenAI.Completions, Agent, Agent.GPT, Agent.ReadFile, Agent.WriteFile, Agent.Browse, Agent.GoogleSearch,
-  Agent.User, Agent.Memory, Agent.ListFiles, Agent.CMD, Logging;
+  Agent.User, Agent.Memory, Agent.ListFiles, Agent.CMD, Logging, AutoGPT.Options;
 const
-  MAIN_GPT_MODEL = 'gpt-4';
-  MAX_TOKENS = 8192;
+  MODEL_GPT_35 = 'gpt-3.5-turbo';
+  MODEL_GPT_4 = 'gpt-4';
+  MAX_TOKENS_GPT35 = 4096;
+  MAX_TOKENS_GPT4 = 8192;
 
   SYSTEM_PROMPT =
     'You are AutoGPT, a capable, unlimited AI-agent that is able to reach the specified goal completely autonomously.'+sLineBreak+
@@ -125,6 +127,7 @@ type
     FLongTermMemory:string;
     FGoal:string;
     FWorkingDir:string;
+    FGPT3Only:Boolean;
     FLastStep:TStepData;
     FUserCallback:TUserCallback;
     function CreateSystemPrompt:TChatMessageBuild;
@@ -132,10 +135,13 @@ type
     function ExtendMemory(const AMemory:string):string;
     function ParseJSONResponse(const AResponse:string;out Thoughts:string; out Plan:string; out Criticism:string; out Action:TAutoGPTAction; out StructureValid:Boolean):string;
     function GetTokenCount(const AString:string):Integer;
+    function GetMainGPTModel:string;
+    function GetMaxToken:Integer;
   public
     constructor Create( const AGoal:string;const AApiKeyOpenAI:string;
                         const AWorkingDir:string;const AApiKeyGoogle:string;
-                        const AGoogleSearchEngineID:string; const AUserCallback:TUserCallback);
+                        const AGoogleSearchEngineID:string; const AUserCallback:TUserCallback;
+                        const AGPT3Only:Boolean);
     procedure RunOneStep;
     function MemoryToString:string;
   end;
@@ -159,9 +165,7 @@ type
   protected
     procedure Execute;override;
   public
-    constructor Create( const AGoal:string;const AApiKeyOpenAI:string;
-                        const AWorkingDir:string;const AApiKeyGoogle:string;
-                        const AGoogleSearchEngineID:string; const AUserCallback:TUserCallback; const AStepCompletedEvent:TStepCompletedEvent);
+    constructor Create(const AGoal:string;const AUserCallback:TUserCallback;const AStepCompletedEvent:TStepCompletedEvent;const AOptions:TAutoGPTOptions);
     destructor Destroy;override;
     procedure RunOneStep;
     procedure Terminate;
@@ -180,7 +184,8 @@ implementation
 uses
   SysUtils;
 constructor TAutoGPTManagerSynced.Create(const AGoal:string;const AApiKeyOpenAI:string;const AWorkingDir:string;
-                                    const AApiKeyGoogle:string;const AGoogleSearchEngineID:string; const AUserCallback:TUserCallback);
+                                    const AApiKeyGoogle:string;const AGoogleSearchEngineID:string; const AUserCallback:TUserCallback;
+                                    const AGPT3Only:Boolean);
 begin
   FGoal:=AGoal;
   FApiKeyOpenAI:=AApiKeyOpenAI;
@@ -188,6 +193,7 @@ begin
   FGoogleSearchEngineID:=AGoogleSearchEngineID;
   FWorkingDir:=AWorkingDir;
   FUserCallback:= AUserCallback;
+  FGPT3Only:=AGPT3Only;
   FOpenAI:=TOpenAI.Create(AApiKeyOpenAI);
   setlength(FMemory,1);
   FMemory[0]:=CreateSystemPrompt; //set the initial state of the model
@@ -226,7 +232,7 @@ begin
     {
      we want at least 256 tokens for the completion
     }
-    if LTokensUsed > (MAX_TOKENS - 256 )then
+    if LTokensUsed > (GetMaxToken() - 256 )then
       Break;
     {
       we insert the latest messages backwards, until the prompt gets too long
@@ -243,8 +249,8 @@ begin
   LChat:= FOpenAI.Chat.Create(  procedure(Params: TChatParams)
   begin
     Params.Messages(LPartialMemory);
-    Params.MaxTokens(MAX_TOKENS - LTokensUsed); //max mode tokens - amount of tokens for the messages
-    Params.Model(MAIN_GPT_MODEL);
+    Params.MaxTokens(GetMaxToken() - LTokensUsed); //max mode tokens - amount of tokens for the messages
+    Params.Model(GetMainGPTModel());
   end);
   try
     for  LChoice in LChat.Choices do
@@ -252,6 +258,22 @@ begin
   finally
     LChat.Free;
   end;
+end;
+
+function TAutoGPTManagerSynced.GetMainGPTModel: string;
+begin
+  if FGPT3Only then
+    Result:= MODEL_GPT_35
+  else
+    Result:= MODEL_GPT_4;
+end;
+
+function TAutoGPTManagerSynced.GetMaxToken: Integer;
+begin
+  if FGPT3Only then
+    Result:= MAX_TOKENS_GPT35
+  else
+    Result:= MAX_TOKENS_GPT4;
 end;
 
 function TAutoGPTManagerSynced.GetTokenCount(const AString: string): Integer;
@@ -501,12 +523,11 @@ end;
 
 { TAutoGPTManager }
 
-constructor TAutoGPTManager.Create(const AGoal, AApiKeyOpenAI, AWorkingDir,
-  AApiKeyGoogle, AGoogleSearchEngineID: string;
-  const AUserCallback: TUserCallback;const AStepCompletedEvent:TStepCompletedEvent);
+constructor TAutoGPTManager.Create(const AGoal:string;const AUserCallback:TUserCallback;const AStepCompletedEvent:TStepCompletedEvent;const AOptions:TAutoGPTOptions);
 begin
   inherited Create(False);
-  FManagerSynced:= TAutoGPTManagerSynced.Create(AGoal,AApiKeyOpenAI,AWorkingDir,AApiKeyGoogle,AGoogleSearchEngineID,PromptUserInternal);
+  FManagerSynced:= TAutoGPTManagerSynced.Create(AGoal,AOptions.OpenAIApiKey,AOptions.WorkingDir,
+                                                AOptions.GoogleCustomSearchApiKey,AOptions.GoogleSearchEngineID,PromptUserInternal,AOptions.GPT3Only);
   FMemory:=FManagerSynced.MemoryToString;
   FUserPromptCallback:=AUserCallback;
   FRunning:=False;
