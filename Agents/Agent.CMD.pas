@@ -36,6 +36,7 @@ var
   LStartupInfo: TStartupInfo;
   LProcessInfo: TProcessInformation;
   LReadPipe, LWritePipe: THandle;
+  LWaitResult:DWORD;
   LSecurityAttributes: TSecurityAttributes;
 begin
   if Length(AParams) <> 1 then
@@ -69,7 +70,9 @@ begin
       CloseHandle(LWritePipe);
       LWritePipe := INVALID_HANDLE_VALUE;
 
-      WaitForSingleObject(LProcessInfo.hProcess, INFINITE);
+      LWaitResult:= WaitForSingleObject(LProcessInfo.hProcess, 30000);
+      if LWaitResult = WAIT_TIMEOUT then
+        TerminateProcess(LProcessInfo.hProcess, 1);
 
       Result := ReadOutput(LReadPipe);
     finally
