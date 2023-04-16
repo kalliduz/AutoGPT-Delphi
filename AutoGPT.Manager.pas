@@ -1,4 +1,4 @@
-﻿unit AutoGPT.Manager;
+unit AutoGPT.Manager;
 
 interface
 uses
@@ -77,7 +77,7 @@ const
     '   ActionCategory:CALL_AGENT, AGENT:WRITE_FILE ["filename","content"]  -- this will write a file with the given name and content'+sLineBreak+
     '   ActionCategory:CALL_AGENT, AGENT:READ_FILE ["filename"]             -- this will read the content from "filename" and return it'+sLineBreak+
     '   ActionCategory:CALL_AGENT, AGENT:BROWSE_SITE ["URL","instruction"]  -- this will read the content of a specific URL, and performs a transformation of the result based on the instruction'+sLineBreak+
-    '   ActionCategory:CALL_AGENT, AGENT:SEARCH_GOOGLE ["query"]            -- this will execute the google search for the given query and returns a short summary and a link-list'+sLineBreak+
+    '   ActionCategory:CALL_AGENT, AGENT:SEARCH_GOOGLE ["query"]            -- this will execute a google search for the given query and returns a short summary and a link-list'+sLineBreak+
     '   ActionCategory:CALL_AGENT, AGENT:LIST_FILES []                      -- this will list the files in your workingspace and return the list as a string'+sLineBreak+
     '   ActionCategory:CALL_AGENT, AGENT:RUN_CMD  ["command"]               -- this will execute the cmd /c with the specified command and returns the standard output'+sLineBreak+
     '   ActionCategory:CALL_AGENT, AGENT:WRITE_MEMORY ["memorycontent"]     -- this will append any information into your system memory, by also decreasing your working memory size'+sLineBreak+
