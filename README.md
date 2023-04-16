@@ -27,7 +27,17 @@ but at the current point, the consistency is not really what you'd want💵
   - introduce more agents (Txt2Img, Compiling)
   - introduce asynchronous calls to utilize to full power of parallel agents
 ## Configuration ⚙
-You need to specifiy your API-Keys in AutoGPT.ini
+You need to specifiy your API-Keys and Settings in **AutoGPT.ini**:
+```
+[OPTIONS]
+WORKING_DIR='C:\Path\To\Your\GPT\Workspace
+GPT3ONLY=0
+[API_KEYS]
+OPEN_AI=sk-123ABC123BCD123123123131231231
+GOOGLE_CUSTOM_SEARCH=AIzzzzz999999111122222333334
+GOOGLE_SEARCH_ENGINE_ID=1234567890abcdef1
+
+```
 
 ## Contact
 If you have any questions or would like to contribute, feel free to contact via 
