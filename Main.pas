@@ -124,7 +124,7 @@ begin
   CategoryPanelGroup1.Panels.Clear;
 
   ForceDirectories(FOptions.WorkingDir);
-  FAutoGpt:= TAutoGPTManager.Create(edtGoal.Text,FOptions.OpenAIApiKey,FOptions.WorkingDir,FOptions.GoogleCustomSearchApiKey,FOptions.GoogleSearchEngineID,UserCallback,OnStepCompleted);
+  FAutoGpt:=TAutoGPTManager.Create(edtGoal.Text,UserCallback,OnStepCompleted,FOptions);
   lblMemory.Caption:=FAutoGpt.Memory;
 end;
 
