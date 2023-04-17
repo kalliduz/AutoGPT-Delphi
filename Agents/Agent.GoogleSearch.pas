@@ -104,7 +104,7 @@ begin
     inc(LSumIdx);
     LSumAgent:=TAgentGPT35.Create(FApiKeyOpenAI);
     try
-      Result:=Result+'SummaryPart'+inttostr(LSumIdx)+': '+sLineBreak + LSumAgent.CallAgent(['Summarize relevant info and list all links from the content:'#13#10,Copy(AText,LStartIndex,LStartIndex+8000)])+sLineBreak;
+      Result:=Result+'SummaryPart'+inttostr(LSumIdx)+': '+sLineBreak + LSumAgent.CallAgent(['Summarize relevant info and list all links from the content:'#13#10,Copy(AText,LStartIndex,8000)])+sLineBreak;
     finally
       LSumAgent.Free;
     end;
