@@ -161,7 +161,10 @@ end;
 procedure TfrmAutoGPTGUI.FormDestroy(Sender: TObject);
 begin
   if Assigned(FAutoGpt) then
+  begin
     FAutoGpt.Free;
+    FAutoGpt.WaitFor;
+  end;
 end;
 
 procedure TfrmAutoGPTGUI.OnStepCompleted;

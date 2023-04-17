@@ -2,7 +2,8 @@
 
 interface
 uses
-  Types, Classes, System.JSON, OpenAI, OpenAI.Chat, OpenAI.Completions, Agent, Agent.GPT, Agent.ReadFile, Agent.WriteFile, Agent.Browse, Agent.GoogleSearch,
+  Types, Classes, System.JSON, OpenAI, OpenAI.Chat, OpenAI.Completions, Agent,
+   Agent.GPT, Agent.ReadFile, Agent.WriteFile, Agent.Browse, Agent.GoogleSearch,
   Agent.User, Agent.Memory, Agent.ListFiles, Agent.CMD, Logging, AutoGPT.Options;
 const
   MODEL_GPT_35 = 'gpt-3.5-turbo';
@@ -199,6 +200,7 @@ begin
   FMemory[0]:=CreateSystemPrompt; //set the initial state of the model
   //initialize logging
   TLogger.LogFile:=ChangeFileExt(ParamStr(0),'.log');
+  TLogger.LogMessage(llDebug,'GPTManager instance created for goal "'+AGoal+'"');
 end;
 
 function TAutoGPTManagerSynced.CreateSystemPrompt: TChatMessageBuild;
@@ -233,30 +235,40 @@ begin
      we want at least 256 tokens for the completion
     }
     if LTokensUsed > (GetMaxToken() - 256 )then
+    begin
+      TLogger.LogMessage(llInfo,'Memory too big, cutting off...');
       Break;
+    end;
     {
       we insert the latest messages backwards, until the prompt gets too long
     }
     Insert(FMemory[i],LPartialMemory,1);
     LTokensUsed:=LTokensUsed + GetTokenCount(LPartialMemory[1].Content);
-
   end;
 
 
   {
     send the messages to OpenAI
   }
-  LChat:= FOpenAI.Chat.Create(  procedure(Params: TChatParams)
-  begin
-    Params.Messages(LPartialMemory);
-    Params.MaxTokens(GetMaxToken() - LTokensUsed); //max mode tokens - amount of tokens for the messages
-    Params.Model(GetMainGPTModel());
-  end);
   try
-    for  LChoice in LChat.Choices do
-      Result:= Result + LChoice.Message.Content;
-  finally
-    LChat.Free;
+    LChat:= FOpenAI.Chat.Create(  procedure(Params: TChatParams)
+    begin
+      Params.Messages(LPartialMemory);
+      Params.MaxTokens(GetMaxToken() - LTokensUsed); //max mode tokens - amount of tokens for the messages
+      Params.Model(GetMainGPTModel());
+    end);
+    try
+      for  LChoice in LChat.Choices do
+        Result:= Result + LChoice.Message.Content;
+    finally
+      LChat.Free;
+    end;
+  except
+    on e:Exception do
+    begin
+      TLogger.LogMessage(llError,'Error getting completion from OpenAI: {'+e.ClassName+'}: '+E.Message);
+      raise;
+    end;
   end;
 end;
 
@@ -552,13 +564,9 @@ begin
       FShouldRun:=False;
       FRunning:=True;
       try
-        try
-          FManagerSynced.RunOneStep;
-          FMemory:=FManagerSynced.MemoryToString;
-          FLastStep:=FManagerSynced.FLastStep;
-        except
-         //TODO: forward exception as status
-        end;
+        FManagerSynced.RunOneStep;
+        FMemory:=FManagerSynced.MemoryToString;
+        FLastStep:=FManagerSynced.FLastStep;
       finally
         FRunning:=False;
         Synchronize(StepCompletedSync);
