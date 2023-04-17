@@ -1,6 +1,9 @@
 # AutoGPT-Delphi
 This is an experiment to create a fully autonomous GPT-instance to solve arbitrary Tasks. Its functionality is similar to Auto-GPT(https://github.com/Torantulino/Auto-GPT) or BabyAGI(https://github.com/yoheinakajima/babyagi).
 
+![ezgif com-video-to-gif (1)](https://user-images.githubusercontent.com/15607730/232590795-d923039a-b32c-423a-ab3c-f8e3ad80abf6.gif)
+
+
 💵AutoGPT-Delphi uses GPT-4 by default, and will utilize GPT3.5-turbo for summarizations, so watch your costs in OpenAI. You can set the main agent to be 3.5 as well,
 but at the current point, the consistency is not really what you'd want💵
 
