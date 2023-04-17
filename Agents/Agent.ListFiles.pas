@@ -6,11 +6,9 @@ uses
 type
   TAgentListFiles = class(TAgent)
   private
-    FWorkingDir:string;
   protected
       function CallAgentInternal(AParams:TAgentParams):string;override;
   public
-    constructor Create(const AWorkingDir:string);
   end;
 
 implementation
@@ -24,9 +22,9 @@ var
 begin
   inherited;
   Result:='';
-  if TDirectory.Exists(FWorkingDir) then
+  if TDirectory.Exists(FAgentEnvironment.WorkingDir) then
   begin
-    LResults:=TDirectory.GetFiles(FWorkingDir);
+    LResults:=TDirectory.GetFiles(FAgentEnvironment.WorkingDir);
     for LFile in LResults do
       Result:= Result+ TPath.GetFileName(LFile)+sLineBreak;
 
@@ -34,14 +32,10 @@ begin
   end
   else
   begin
-    LogDebugMessage('Directory '+FWorkingDir+'doesn''t exist');
+    LogDebugMessage('Directory '+FAgentEnvironment.WorkingDir+'doesn''t exist');
     Result:= 'AutoGPT workspace is not existing!';
   end;
 end;
 
-constructor TAgentListFiles.Create(const AWorkingDir: string);
-begin
-  FWorkingDir:=AWorkingDir;
-end;
 
 end.

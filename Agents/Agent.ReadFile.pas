@@ -6,12 +6,8 @@ uses
 
 type
   TAgentReadFile = class(TAgent)
-  private
-    FWorkingDir:string;
   protected
     function CallAgentInternal(AParams:TAgentParams):string;override;
-  public
-    constructor Create(const AWorkingDir:string);
   end;
 
 implementation
@@ -25,7 +21,7 @@ var
 begin
   inherited;
   Result:='';
-  LFullFileName:=TPath.Combine(IncludeTrailingPathDelimiter(FWorkingDir),AParams[0]);
+  LFullFileName:=TPath.Combine(IncludeTrailingPathDelimiter(FAgentEnvironment.WorkingDir),AParams[0]);
   if FileExists(LFullFileName) then
   begin
     LStr:= TStringList.Create;
@@ -38,10 +34,5 @@ begin
   end;
 end;
 
-constructor TAgentReadFile.Create(const AWorkingDir: string);
-begin
-  inherited Create;
-  FWorkingDir:= AWorkingDir;
-end;
 
 end.

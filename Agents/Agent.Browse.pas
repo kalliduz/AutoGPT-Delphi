@@ -6,12 +6,8 @@ uses
 
 type
   TAgentBrowse = class(TAgent)
-  private
-    FApiKey:string;
   protected
     function CallAgentInternal(AParams:TAgentParams):string;override;
-  public
-    constructor Create(const AApiKey:string);
   end;
 
 
@@ -107,7 +103,7 @@ begin
   {
     we got our content, now we execute the specified instruction with GPT-3
   }
-  LSumAgent:=TAgentGPT35.Create(FApiKey);
+  LSumAgent:=TAgentGPT35.Create(FAgentEnvironment);
   try
     Result:=  LSumAgent.CallAgent([AParams[1]+':'#13#10,Copy(LContent,0,8000)]);
   finally
@@ -115,9 +111,5 @@ begin
   end;
 end;
 
-constructor TAgentBrowse.Create(const AApiKey: string);
-begin
-  FApiKey:=AApiKey;
-end;
 
 end.

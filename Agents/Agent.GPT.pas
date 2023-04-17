@@ -7,12 +7,10 @@ uses
 type
   TAgentGPT = class(TAgent)
   private
-    FOpenAI:TOpenAI;
     function GetModel:string;virtual;abstract;
   protected
     function CallAgentInternal(AParams:TAgentParams):string;override;
   public
-    constructor Create(const AAPIKey:string);
     destructor Destroy;
 
   end;
@@ -37,43 +35,44 @@ function TAgentGPT.CallAgentInternal(AParams: TAgentParams): string;
 var
   LChat:TChat;
   LChoice:TChatChoices;
+  LOpenAI:TOpenAI;
   LMessages:TArray<TChatMessageBuild>;
 begin
   inherited;
-  Result:='';
-  {
-    prepare the message
-  }
-  setlength(LMessages,1);
-  LMessages[0]:=TChatMessageBuild.Create(TMessageRole.User,AParams[0] + #13#10 + AParams[1]);
-
-  {
-    send the message to OpenAI
-  }
-  LChat:= FOpenAI.Chat.Create(  procedure(Params: TChatParams)
-  begin
-    Params.Messages(LMessages);
-    Params.MaxTokens(1024); //TODO: should be configurable
-    Params.Model(GetModel());
-  end);
   try
-    for  LChoice in LChat.Choices do
-      Result:= Result + LChoice.Message.Content;
-  finally
-    LChat.Free;
-  end;
-end;
+    LOpenAI:=TOpenAI.Create(FAgentEnvironment.OpenAIApiKey);
 
-constructor TAgentGPT.Create(const AAPIKey: string);
-begin
-  FOpenAI:=TOpenAI.Create(AAPIKey);
+    Result:='';
+    {
+      prepare the message
+    }
+    setlength(LMessages,1);
+    LMessages[0]:=TChatMessageBuild.Create(TMessageRole.User,AParams[0] + #13#10 + AParams[1]);
+
+    {
+      send the message to OpenAI
+    }
+    LChat:= LOpenAI.Chat.Create(  procedure(Params: TChatParams)
+    begin
+      Params.Messages(LMessages);
+      Params.MaxTokens(1024); //TODO: should be configurable
+      Params.Model(GetModel());
+    end);
+    try
+      for  LChoice in LChat.Choices do
+        Result:= Result + LChoice.Message.Content;
+    finally
+      LChat.Free;
+    end;
+  finally
+    LOpenAI.Free;
+  end;
 end;
 
 
 destructor TAgentGPT.Destroy;
 begin
   inherited;
-  FOpenAI.Free;
 end;
 
 { TAgentGPT35 }

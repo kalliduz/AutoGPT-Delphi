@@ -6,12 +6,8 @@ uses
 
 type
   TAgentWriteFile = class(TAgent)
-  private
-    FWorkingDir:string;
   protected
     function CallAgentInternal(AParams:TAgentParams):string;override;
-  public
-    constructor Create(const AWorkingDir:string);
   end;
 
 implementation
@@ -25,7 +21,7 @@ var
 begin
   inherited;
   Result:='1';
-  LFullFileName:=TPath.Combine(IncludeTrailingPathDelimiter(FWorkingDir),AParams[0]);
+  LFullFileName:=TPath.Combine(IncludeTrailingPathDelimiter(FAgentEnvironment.WorkingDir),AParams[0]);
   LStr:=TStringList.Create;
   try
     LStr.Text:=StringReplace(AParams[1],'\n',#13#10,[rfReplaceAll]);
@@ -36,11 +32,6 @@ begin
   end;
 end;
 
-constructor TAgentWriteFile.Create(const AWorkingDir: string);
-begin
-  inherited Create;
-  FWorkingDir:= AWorkingDir;
-end;
 
 end.
 

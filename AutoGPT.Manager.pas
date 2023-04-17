@@ -129,7 +129,7 @@ type
     FWorkingDir:string;
     FGPT3Only:Boolean;
     FLastStep:TStepData;
-    FUserCallback:TUserCallback;
+    FUserCallback:TCallback;
     function CreateSystemPrompt:TChatMessageBuild;
     function GetCompletion:string;
     function ExtendMemory(const AMemory:string):string;
@@ -140,7 +140,7 @@ type
   public
     constructor Create( const AGoal:string;const AApiKeyOpenAI:string;
                         const AWorkingDir:string;const AApiKeyGoogle:string;
-                        const AGoogleSearchEngineID:string; const AUserCallback:TUserCallback;
+                        const AGoogleSearchEngineID:string; const AUserCallback:TCallback;
                         const AGPT3Only:Boolean);
     procedure RunOneStep;
     function MemoryToString:string;
@@ -153,7 +153,7 @@ type
     FMemory:string;
     FRunning:Boolean;
     FShouldRun:Boolean;
-    FUserPromptCallback:TUserCallback;
+    FUserPromptCallback:TCallback;
     FStepCompletedEvent:TStepCompletedEvent;
     FTerminated:Boolean;
     FUserPrompt:string;
@@ -165,7 +165,7 @@ type
   protected
     procedure Execute;override;
   public
-    constructor Create(const AGoal:string;const AUserCallback:TUserCallback;const AStepCompletedEvent:TStepCompletedEvent;const AOptions:TAutoGPTOptions);
+    constructor Create(const AGoal:string;const AUserCallback:TCallback;const AStepCompletedEvent:TStepCompletedEvent;const AOptions:TAutoGPTOptions);
     destructor Destroy;override;
     procedure RunOneStep;
     procedure Terminate;
@@ -184,7 +184,7 @@ implementation
 uses
   SysUtils;
 constructor TAutoGPTManagerSynced.Create(const AGoal:string;const AApiKeyOpenAI:string;const AWorkingDir:string;
-                                    const AApiKeyGoogle:string;const AGoogleSearchEngineID:string; const AUserCallback:TUserCallback;
+                                    const AApiKeyGoogle:string;const AGoogleSearchEngineID:string; const AUserCallback:TCallback;
                                     const AGPT3Only:Boolean);
 begin
   FGoal:=AGoal;
@@ -440,6 +440,7 @@ var
   LError:string;
   LAgent:TAgent;
   LAgentReponse:string;
+  LAgentEnv:TAgentEnvironment;
 begin
   {
     at first we update our memory by corrrecting the systemprompt for updated long term memory
@@ -468,7 +469,12 @@ begin
   FLastStep.Success:=LValid;
   FLastStep.ErrorMessage:=LError;
   FLastStep.FullOutput:=LModelResponse;
-
+  LAgentEnv.WorkingDir:=FWorkingDir;
+  LAgentEnv.OpenAIApiKey:=FApiKeyOpenAI;
+  LAgentEnv.GoogleSearchAPIKey:=FApiKeyGoogle;
+  LAgentEnv.GoogleSearchEngineID:=FGoogleSearchEngineID;
+  LAgentEnv.UserCallback:=FUserCallback;
+  LAgentEnv.MemoryCallback:=ExtendMemory;
   if not LValid then
   begin
     {
@@ -488,15 +494,15 @@ begin
           create our specific agent
         }
         case LAction.AgentType of
-          atUser: LAgent:=TAgentUser.Create(FUserCallback);
-          atWriteFile: LAgent:=TAgentWriteFile.Create(FWorkingDir) ;
-          atReadFile: LAgent:=TAgentReadFile.Create(FWorkingDir);
-          atBrowseSite: LAgent:= TAgentBrowse.Create(FApiKeyOpenAI);
-          atSearchGoogle: LAgent:= TAgentGoogleSearch.Create(FApiKeyOpenAI,FApiKeyGoogle,FGoogleSearchEngineID);
-          atWriteMemory: LAgent:= TAgentMemory.Create(ExtendMemory);
-          atGPT: LAgent:= TAgentGPT35.Create(FApiKeyOpenAI);
-          atListFiles: LAgent:=TAgentListFiles.Create(FWorkingDir);
-          atRunCMD: LAgent:=TAgentCMD.Create;
+          atUser: LAgent:=TAgentUser.Create(LAgentEnv);
+          atWriteFile: LAgent:=TAgentWriteFile.Create(LAgentEnv) ;
+          atReadFile: LAgent:=TAgentReadFile.Create(LAgentEnv);
+          atBrowseSite: LAgent:= TAgentBrowse.Create(LAgentEnv);
+          atSearchGoogle: LAgent:= TAgentGoogleSearch.Create(LAgentEnv);
+          atWriteMemory: LAgent:= TAgentMemory.Create(LAgentEnv);
+          atGPT: LAgent:= TAgentGPT35.Create(LAgentEnv);
+          atListFiles: LAgent:=TAgentListFiles.Create(LAgentEnv);
+          atRunCMD: LAgent:=TAgentCMD.Create(LAgentEnv);
         end;
         {
           call the agent
@@ -523,7 +529,7 @@ end;
 
 { TAutoGPTManager }
 
-constructor TAutoGPTManager.Create(const AGoal:string;const AUserCallback:TUserCallback;const AStepCompletedEvent:TStepCompletedEvent;const AOptions:TAutoGPTOptions);
+constructor TAutoGPTManager.Create(const AGoal:string;const AUserCallback:TCallback;const AStepCompletedEvent:TStepCompletedEvent;const AOptions:TAutoGPTOptions);
 begin
   inherited Create(False);
   FManagerSynced:= TAutoGPTManagerSynced.Create(AGoal,AOptions.OpenAIApiKey,AOptions.WorkingDir,
