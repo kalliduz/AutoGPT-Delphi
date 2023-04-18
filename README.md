@@ -27,7 +27,7 @@ but at the current point, the consistency is not really what you'd want💵
 ## Plans for the future 🔮
   - Improve the system prompt to make even GPT 3.5 understand it
   - rewrite the agent syntax to be easier parseable
-  - introduce more agents (Txt2Img, Compiling)
+  - introduce more agents (Txt2Img, Compiling, TwitterAPI)
   - introduce asynchronous calls to utilize to full power of parallel agents
 ## Configuration ⚙
 You need to specifiy your API-Keys and Settings in **AutoGPT.ini**:
